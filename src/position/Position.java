@@ -14,6 +14,23 @@ public class Position {
     public int hundredHalfmoveTimer;
     public int enPassantTargetFiles;
     public boolean whiteToMove;
+    public byte[][] pieceSquareList = new byte[15][];
+    {
+        pieceSquareList[Type.White | Type.Pawn] = new byte[8];
+        pieceSquareList[Type.White | Type.Knight] = new byte[10];//max 10 knights with 8 pawn underpromotions
+        pieceSquareList[Type.White | Type.Bishop] = new byte[10];//same idea for the rest of the pieces
+        pieceSquareList[Type.White | Type.Rook] = new byte[10];
+        pieceSquareList[Type.White | Type.Queen] = new byte[10];
+        pieceSquareList[Type.White | Type.King] = new byte[1];
+        pieceSquareList[Type.Black | Type.Pawn] = new byte[8];
+        pieceSquareList[Type.Black | Type.Knight] = new byte[10];
+        pieceSquareList[Type.Black | Type.Bishop] = new byte[10];
+        pieceSquareList[Type.Black | Type.Rook] = new byte[10];
+        pieceSquareList[Type.Black | Type.Queen] = new byte[10];
+        pieceSquareList[Type.Black | Type.King] = new byte[1];
+    }
+    public byte[] numPieces = new byte[15];
+    public byte[][] colorIndexBoard = new byte[2][64];//0 for white, 1 for black
 
     //additional useful variables in the position
     public Stack<Integer> PreviousMadeMoves = new Stack<>();
@@ -79,6 +96,12 @@ public class Position {
         for (int x=0;x<64;x++) {
             byte pieceOnX = getPieceFromSquareWithBB(x,PieceArray);
             squareCentricPos[x]=pieceOnX;
+
+            if (pieceOnX != Type.Empty) {
+                pieceSquareList[pieceOnX][numPieces[pieceOnX]]= (byte) x;
+                colorIndexBoard[pieceOnX/8][x] = numPieces[pieceOnX];
+                numPieces[pieceOnX]++;
+            }
         }
 
         whiteToMove = fen.substring(indexOfFirstSpace+1,indexOfFirstSpace+2).equals("w");
@@ -133,7 +156,7 @@ public class Position {
         this.whiteToMove=whiteToMove;
     }
 
-    public void makeMove(int move) {
+    public void makeMove(int move) {//TODO: make only one switch case, not two
 
         PreviousMadeMoves.push(move);
         PreviousCastlingRights.push(castlingRights);
@@ -146,12 +169,134 @@ public class Position {
         byte toSquare = Move.getToSquareFromMove(move);
         byte moveType = Move.getMoveTypeFromMove(move);
         byte movingPiece = squareCentricPos[fromSquare];
+        byte colorIndex = (byte)(movingPiece/8);
+        byte index = colorIndexBoard[colorIndex][fromSquare];
+
+        switch (moveType) {
+            case Type.normalMove -> {
+                colorIndexBoard[colorIndex][toSquare] = index;
+                pieceSquareList[movingPiece][index] = toSquare;
+            }
+            case Type.enPassant -> {
+                colorIndexBoard[colorIndex][toSquare] = index;
+                pieceSquareList[movingPiece][index] = toSquare;
+
+                byte squareOfCapturedPawn = (byte) (whiteToMove ? toSquare-8 : toSquare+8);
+                colorIndex ^= 1;
+                byte capturedPiece = (byte) (colorIndex*8 | Type.Pawn);
+
+                numPieces[capturedPiece]--;
+                index = colorIndexBoard[colorIndex][squareOfCapturedPawn];
+                byte square = pieceSquareList[capturedPiece][numPieces[capturedPiece]];
+                pieceSquareList[capturedPiece][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+            }
+            case Type.doublePawnMove -> {
+                colorIndexBoard[colorIndex][toSquare] = index;
+                pieceSquareList[movingPiece][index] = toSquare;
+            }
+            case Type.castles -> {
+                colorIndexBoard[colorIndex][toSquare] = index;
+                pieceSquareList[movingPiece][index] = toSquare;
+
+                switch (toSquare) {
+                    case 6-> {//white castles short
+                        index = colorIndexBoard[colorIndex][7];
+                        movingPiece = (byte) (colorIndex*8 | Type.Rook);
+                        colorIndexBoard[colorIndex][5] = index;
+                        pieceSquareList[movingPiece][index] = 5;
+                    }
+                    case 2-> {//white castles long
+                        index = colorIndexBoard[colorIndex][0];
+                        movingPiece = (byte) (colorIndex*8 | Type.Rook);
+                        colorIndexBoard[colorIndex][3] = index;
+                        pieceSquareList[movingPiece][index] = 3;
+                    }
+                    case 62-> {//black castles short
+                        index = colorIndexBoard[colorIndex][63];
+                        movingPiece = (byte) (colorIndex*8 | Type.Rook);
+                        colorIndexBoard[colorIndex][61] = index;
+                        pieceSquareList[movingPiece][index] = 61;
+                    }
+                    case 58-> {//black castles long
+                        index = colorIndexBoard[colorIndex][56];
+                        movingPiece = (byte) (colorIndex*8 | Type.Rook);
+                        colorIndexBoard[colorIndex][59] = index;
+                        pieceSquareList[movingPiece][index] = 59;
+                    }
+                }
+            }
+            case Type.pawnPromotesToQ -> {
+                byte colorPromotingTo = (byte) (colorIndex*8);
+                byte piecePromotingTo = (byte) (colorPromotingTo | Type.Queen);
+
+                numPieces[movingPiece]--;
+                index = colorIndexBoard[colorIndex][fromSquare];
+                byte square = pieceSquareList[movingPiece][numPieces[movingPiece]];
+                pieceSquareList[movingPiece][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+
+                pieceSquareList[piecePromotingTo][numPieces[piecePromotingTo]] = toSquare;
+                colorIndexBoard[colorIndex][toSquare] = numPieces[piecePromotingTo];
+                numPieces[piecePromotingTo]++;
+            }
+            case Type.pawnPromotesToN -> {
+                byte colorPromotingTo = (byte) (colorIndex*8);
+                byte piecePromotingTo = (byte) (colorPromotingTo | Type.Knight);
+
+                numPieces[movingPiece]--;
+                index = colorIndexBoard[colorIndex][fromSquare];
+                byte square = pieceSquareList[movingPiece][numPieces[movingPiece]];
+                pieceSquareList[movingPiece][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+
+                pieceSquareList[piecePromotingTo][numPieces[piecePromotingTo]] = toSquare;
+                colorIndexBoard[colorIndex][toSquare] = numPieces[piecePromotingTo];
+                numPieces[piecePromotingTo]++;
+            }
+            case Type.pawnPromotesToB -> {
+                byte colorPromotingTo = (byte) (colorIndex*8);
+                byte piecePromotingTo = (byte) (colorPromotingTo | Type.Bishop);
+
+                numPieces[movingPiece]--;
+                index = colorIndexBoard[colorIndex][fromSquare];
+                byte square = pieceSquareList[movingPiece][numPieces[movingPiece]];
+                pieceSquareList[movingPiece][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+
+                pieceSquareList[piecePromotingTo][numPieces[piecePromotingTo]] = toSquare;
+                colorIndexBoard[colorIndex][toSquare] = numPieces[piecePromotingTo];
+                numPieces[piecePromotingTo]++;
+            }
+            case Type.pawnPromotesToR -> {
+                byte colorPromotingTo = (byte) (colorIndex*8);
+                byte piecePromotingTo = (byte) (colorPromotingTo | Type.Rook);
+
+                numPieces[movingPiece]--;
+                index = colorIndexBoard[colorIndex][fromSquare];
+                byte square = pieceSquareList[movingPiece][numPieces[movingPiece]];
+                pieceSquareList[movingPiece][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+
+                pieceSquareList[piecePromotingTo][numPieces[piecePromotingTo]] = toSquare;
+                colorIndexBoard[colorIndex][toSquare] = numPieces[piecePromotingTo];
+                numPieces[piecePromotingTo]++;
+            }
+        }
+        byte capturedPiece = squareCentricPos[toSquare];
+        if (capturedPiece != Type.Empty) {//update piece list for captured piece
+            numPieces[capturedPiece]--;
+            colorIndex ^= 1;
+            index = colorIndexBoard[colorIndex][toSquare];
+            byte lastSquare = pieceSquareList[capturedPiece][numPieces[capturedPiece]];
+            pieceSquareList[capturedPiece][index] = lastSquare;
+            colorIndexBoard[colorIndex][lastSquare] = index;
+        }
 
         switch (moveType) {
             case Type.normalMove -> {
                 long fromSquareBB = toBitboard(fromSquare);
                 long toSquareBB = toBitboard(toSquare);
-                short capturedPiece = squareCentricPos[toSquare];
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]=movingPiece;//updates redundant squareCentricPosition
@@ -242,7 +387,6 @@ public class Position {
 
                 long fromSquareBB = toBitboard(fromSquare);
                 long toSquareBB = toBitboard(toSquare);
-                byte capturedPiece = Move.getCapturedPieceFromMove(move);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]= (byte)(colorPromoting | Type.Queen);//updates redundant squareCentricPosition
@@ -263,7 +407,6 @@ public class Position {
 
                 long fromSquareBB = toBitboard(fromSquare);
                 long toSquareBB = toBitboard(toSquare);
-                byte capturedPiece = Move.getCapturedPieceFromMove(move);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]= (byte)(colorPromoting | Type.Knight);//updates redundant squareCentricPosition
@@ -284,7 +427,6 @@ public class Position {
 
                 long fromSquareBB = toBitboard(fromSquare);
                 long toSquareBB = toBitboard(toSquare);
-                byte capturedPiece = Move.getCapturedPieceFromMove(move);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]= (byte)(colorPromoting | Type.Bishop);//updates redundant squareCentricPosition
@@ -305,7 +447,6 @@ public class Position {
 
                 long fromSquareBB = toBitboard(fromSquare);
                 long toSquareBB = toBitboard(toSquare);
-                byte capturedPiece = Move.getCapturedPieceFromMove(move);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]= (byte)(colorPromoting | Type.Rook);//updates redundant squareCentricPosition
@@ -328,9 +469,133 @@ public class Position {
     public void unmakeMove(int move) {
         byte fromSquare = Move.getFromSquareFromMove(move);
         byte toSquare = Move.getToSquareFromMove(move);
-        byte capturedPiece = Move.getCapturedPieceFromMove(move);
         byte moveType = Move.getMoveTypeFromMove(move);
         byte movingPiece = squareCentricPos[toSquare];
+        byte colorIndex = (byte)(movingPiece/8);
+        byte index = colorIndexBoard[colorIndex][toSquare];
+
+
+        switch (moveType) {
+            case Type.normalMove -> {
+                colorIndexBoard[colorIndex][fromSquare] = index;
+                pieceSquareList[movingPiece][index] = fromSquare;
+            }
+            case Type.enPassant -> {
+                colorIndexBoard[colorIndex][fromSquare] = index;
+                pieceSquareList[movingPiece][index] = fromSquare;
+
+                byte squareOfCapturedPawn = (byte) (!whiteToMove ? toSquare-8 : toSquare+8);//try switching these if doesn't work on first try
+                colorIndex ^= 1;
+                byte capturedPiece = (byte) (colorIndex*8 | Type.Pawn);
+
+                pieceSquareList[capturedPiece][numPieces[capturedPiece]] = squareOfCapturedPawn;
+                colorIndexBoard[colorIndex][squareOfCapturedPawn] = numPieces[capturedPiece];
+                numPieces[capturedPiece]++;
+            }
+            case Type.doublePawnMove -> {
+                colorIndexBoard[colorIndex][fromSquare] = index;
+                pieceSquareList[movingPiece][index] = fromSquare;
+            }
+            case Type.castles -> {
+                colorIndexBoard[colorIndex][fromSquare] = index;
+                pieceSquareList[movingPiece][index] = fromSquare;
+
+                switch (toSquare) {
+                    case 6-> {//white castles short
+                        index = colorIndexBoard[colorIndex][5];
+                        movingPiece = (byte) (colorIndex*8 | Type.Rook);
+                        colorIndexBoard[colorIndex][7] = index;
+                        pieceSquareList[movingPiece][index] = 7;
+                    }
+                    case 2-> {//white castles long
+                        index = colorIndexBoard[colorIndex][3];
+                        movingPiece = (byte) (colorIndex*8 | Type.Rook);
+                        colorIndexBoard[colorIndex][0] = index;
+                        pieceSquareList[movingPiece][index] = 0;
+                    }
+                    case 62-> {//black castles short
+                        index = colorIndexBoard[colorIndex][61];
+                        movingPiece = (byte) (colorIndex*8 | Type.Rook);
+                        colorIndexBoard[colorIndex][63] = index;
+                        pieceSquareList[movingPiece][index] = 63;
+                    }
+                    case 58-> {//black castles long
+                        index = colorIndexBoard[colorIndex][59];
+                        movingPiece = (byte) (colorIndex*8 | Type.Rook);
+                        colorIndexBoard[colorIndex][56] = index;
+                        pieceSquareList[movingPiece][index] = 56;
+                    }
+                }
+            }
+            case Type.pawnPromotesToQ -> {
+                byte colorPromoting = (byte) (colorIndex*8);
+                byte piecePromotedTo = squareCentricPos[toSquare];
+                byte piecePromotedFrom = (byte) (colorPromoting | Type.Pawn);
+
+                numPieces[piecePromotedTo]--;
+                index = colorIndexBoard[colorIndex][toSquare];
+                byte square = pieceSquareList[piecePromotedTo][numPieces[piecePromotedTo]];
+                pieceSquareList[piecePromotedTo][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+
+                pieceSquareList[piecePromotedFrom][numPieces[piecePromotedFrom]] = fromSquare;
+                colorIndexBoard[colorIndex][fromSquare] = numPieces[piecePromotedFrom];
+                numPieces[piecePromotedFrom]++;
+            }
+            case Type.pawnPromotesToN -> {
+                byte colorPromoting = (byte) (colorIndex*8);
+                byte piecePromotedTo = squareCentricPos[toSquare];
+                byte piecePromotedFrom = (byte) (colorPromoting | Type.Pawn);
+
+                numPieces[piecePromotedTo]--;
+                index = colorIndexBoard[colorIndex][toSquare];
+                byte square = pieceSquareList[piecePromotedTo][numPieces[piecePromotedTo]];
+                pieceSquareList[piecePromotedTo][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+
+                pieceSquareList[piecePromotedFrom][numPieces[piecePromotedFrom]] = fromSquare;
+                colorIndexBoard[colorIndex][fromSquare] = numPieces[piecePromotedFrom];
+                numPieces[piecePromotedFrom]++;
+            }
+            case Type.pawnPromotesToB -> {
+                byte colorPromoting = (byte) (colorIndex*8);
+                byte piecePromotedTo = squareCentricPos[toSquare];
+                byte piecePromotedFrom = (byte) (colorPromoting | Type.Pawn);
+
+                numPieces[piecePromotedTo]--;
+                index = colorIndexBoard[colorIndex][toSquare];
+                byte square = pieceSquareList[piecePromotedTo][numPieces[piecePromotedTo]];
+                pieceSquareList[piecePromotedTo][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+
+                pieceSquareList[piecePromotedFrom][numPieces[piecePromotedFrom]] = fromSquare;
+                colorIndexBoard[colorIndex][fromSquare] = numPieces[piecePromotedFrom];
+                numPieces[piecePromotedFrom]++;
+            }
+            case Type.pawnPromotesToR -> {
+                byte colorPromoting = (byte) (colorIndex*8);
+                byte piecePromotedTo = squareCentricPos[toSquare];
+                byte piecePromotedFrom = (byte) (colorPromoting | Type.Pawn);
+
+                numPieces[piecePromotedTo]--;
+                index = colorIndexBoard[colorIndex][toSquare];
+                byte square = pieceSquareList[piecePromotedTo][numPieces[piecePromotedTo]];
+                pieceSquareList[piecePromotedTo][index] = square;
+                colorIndexBoard[colorIndex][square] = index;
+
+                pieceSquareList[piecePromotedFrom][numPieces[piecePromotedFrom]] = fromSquare;
+                colorIndexBoard[colorIndex][fromSquare] = numPieces[piecePromotedFrom];
+                numPieces[piecePromotedFrom]++;
+            }
+        }
+        byte capturedPiece = Move.getCapturedPieceFromMove(move);
+
+        if (capturedPiece !=0) {
+            colorIndex ^=1;
+            pieceSquareList[capturedPiece][numPieces[capturedPiece]] = toSquare;
+            colorIndexBoard[colorIndex][toSquare] = numPieces[capturedPiece];
+            numPieces[capturedPiece]++;
+        }
 
         switch (moveType) {
             case Type.normalMove-> {
@@ -489,130 +754,98 @@ public class Position {
         for (int i=0;i<64;i++) {
             squareAttacksArray[i]=0;
         }
-        for (int i=0;i<6;i++) {
-            whiteAttacksArray[i+1]=0;
-            blackAttacksArray[i+1]=0;
+        for (int i=1;i<7;i++) {
+            whiteAttacksArray[i]=0;
+            blackAttacksArray[i]=0;
         }
 
         long whiteBlockers = allPieces ^ PieceArray[Type.Black | Type.King];
         long blackBlockers = allPieces ^ PieceArray[Type.White | Type.King];
 
-
-        int numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+        for (int i=0;i<numPieces[Type.White | Type.Pawn];i++) {
+            int pieceSquare = pieceSquareList[Type.White | Type.Pawn][i];
             long pieceAttackBB = PieceAttack.lookUpWhitePawnAttacks(pieceSquare);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             whiteAttacksArray[Type.Pawn] |= pieceAttackBB;
-            tempPieceBB ^= 1L<<pieceSquare;
         }
 
-        tempPieceBB= PieceArray[Type.White | Type.Knight];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
-            long pieceSquareBB = 1L<<pieceSquare;
+        for (int i=0;i<numPieces[Type.White | Type.Knight];i++) {
+            int pieceSquare = pieceSquareList[Type.White | Type.Knight][i];
             long pieceAttackBB = PieceAttack.lookUpKnightAttacks(pieceSquare);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             whiteAttacksArray[Type.Knight] |= pieceAttackBB;
-            tempPieceBB ^= pieceSquareBB;
         }
 
-        tempPieceBB= PieceArray[Type.White | Type.Bishop];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
-            long pieceSquareBB = 1L<<pieceSquare;
-            long pieceAttackBB = PieceAttack.lookUpBishopAttacks(pieceSquare,whiteBlockers);
+        for (int i=0;i<numPieces[Type.White | Type.Bishop];i++) {
+            int pieceSquare = pieceSquareList[Type.White | Type.Bishop][i];
+            long pieceAttackBB = PieceAttack.lookUpBishopAttacks(pieceSquare, whiteBlockers);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             whiteAttacksArray[Type.Bishop] |= pieceAttackBB;
-            tempPieceBB ^= 1L<<pieceSquare;
         }
 
-        tempPieceBB=PieceArray[Type.White | Type.Rook];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
-            long pieceAttackBB = PieceAttack.lookUpRookAttacks(pieceSquare,whiteBlockers);
+        for (int i=0;i<numPieces[Type.White | Type.Rook];i++) {
+            int pieceSquare = pieceSquareList[Type.White | Type.Rook][i];
+            long pieceAttackBB = PieceAttack.lookUpRookAttacks(pieceSquare, whiteBlockers);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             whiteAttacksArray[Type.Rook] |= pieceAttackBB;
-            tempPieceBB ^= 1L<<pieceSquare;
         }
 
-        tempPieceBB=PieceArray[Type.White | Type.Queen];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
-            long pieceAttackBB = PieceAttack.lookUpQueenAttacks(pieceSquare,whiteBlockers);
+        for (int i=0;i<numPieces[Type.White | Type.Queen];i++) {
+            int pieceSquare = pieceSquareList[Type.White | Type.Queen][i];
+            long pieceAttackBB = PieceAttack.lookUpQueenAttacks(pieceSquare, whiteBlockers);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             whiteAttacksArray[Type.Queen] |= pieceAttackBB;
-            tempPieceBB ^= 1L<<pieceSquare;
         }
 
-        tempPieceBB=PieceArray[Type.White | Type.King];
-        int tempPS = Long.numberOfTrailingZeros(tempPieceBB);
-        long tempPABB = PieceAttack.lookUpKingAttacks(tempPS);
-        squareAttacksArray[tempPS]= tempPABB;
-        whiteAttacksArray[Type.King] |= tempPABB;
+        {
+            int pieceSquare = pieceSquareList[Type.White | Type.King][0];
+            long pieceAttackBB = PieceAttack.lookUpKingAttacks(pieceSquare);
+            squareAttacksArray[pieceSquare] = pieceAttackBB;
+            whiteAttacksArray[Type.King] |= pieceAttackBB;
+        }
 
 
-        tempPieceBB= PieceArray[Type.Black | Type.Pawn];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+        for (int i=0;i<numPieces[Type.Black | Type.Pawn];i++) {
+            int pieceSquare = pieceSquareList[Type.Black | Type.Pawn][i];
             long pieceAttackBB = PieceAttack.lookUpBlackPawnAttacks(pieceSquare);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             blackAttacksArray[Type.Pawn] |= pieceAttackBB;
-            tempPieceBB ^= 1L<<pieceSquare;
         }
 
-        tempPieceBB= PieceArray[Type.Black | Type.Knight];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
-            long pieceSquareBB = 1L<<pieceSquare;
+        for (int i=0;i<numPieces[Type.Black | Type.Knight];i++) {
+            int pieceSquare = pieceSquareList[Type.Black | Type.Knight][i];
             long pieceAttackBB = PieceAttack.lookUpKnightAttacks(pieceSquare);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             blackAttacksArray[Type.Knight] |= pieceAttackBB;
-            tempPieceBB ^= pieceSquareBB;
         }
 
-        tempPieceBB= PieceArray[Type.Black | Type.Bishop];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
-            long pieceAttackBB = PieceAttack.lookUpBishopAttacks(pieceSquare,blackBlockers);
+        for (int i=0;i<numPieces[Type.Black | Type.Bishop];i++) {
+            int pieceSquare = pieceSquareList[Type.Black | Type.Bishop][i];
+            long pieceAttackBB = PieceAttack.lookUpBishopAttacks(pieceSquare, blackBlockers);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             blackAttacksArray[Type.Bishop] |= pieceAttackBB;
-            tempPieceBB ^= 1L<<pieceSquare;
         }
 
-        tempPieceBB=PieceArray[Type.Black | Type.Rook];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
-            long pieceAttackBB = PieceAttack.lookUpRookAttacks(pieceSquare,blackBlockers);
+        for (int i=0;i<numPieces[Type.Black | Type.Rook];i++) {
+            int pieceSquare = pieceSquareList[Type.Black | Type.Rook][i];
+            long pieceAttackBB = PieceAttack.lookUpRookAttacks(pieceSquare, blackBlockers);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             blackAttacksArray[Type.Rook] |= pieceAttackBB;
-            tempPieceBB ^= 1L<<pieceSquare;
         }
 
-        tempPieceBB=PieceArray[Type.Black | Type.Queen];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
-            long pieceAttackBB = PieceAttack.lookUpQueenAttacks(pieceSquare,blackBlockers);
+        for (int i=0;i<numPieces[Type.Black | Type.Queen];i++) {
+            int pieceSquare = pieceSquareList[Type.Black | Type.Queen][i];
+            long pieceAttackBB = PieceAttack.lookUpQueenAttacks(pieceSquare, blackBlockers);
             squareAttacksArray[pieceSquare]= pieceAttackBB;
             blackAttacksArray[Type.Queen] |= pieceAttackBB;
-            tempPieceBB ^= 1L<<pieceSquare;
         }
 
-        tempPieceBB=PieceArray[Type.Black | Type.King];
-        tempPS = Long.numberOfTrailingZeros(tempPieceBB);
-        tempPABB = PieceAttack.lookUpKingAttacks(tempPS);
-        squareAttacksArray[tempPS]= tempPABB;
-        blackAttacksArray[Type.King] |= tempPABB;
-
+        {
+            int pieceSquare = pieceSquareList[Type.Black | Type.King][0];
+            long pieceAttackBB = PieceAttack.lookUpKingAttacks(pieceSquare);
+            squareAttacksArray[pieceSquare] = pieceAttackBB;
+            blackAttacksArray[Type.King] |= pieceAttackBB;
+        }
     }
     public void calculateInCheck() {
         numChecks=0;
@@ -770,49 +1003,29 @@ public class Position {
             notFriendlyPieces=~blackPieces;
         }
 
-        long tempPieceBB = PieceArray[colorToFindMovesFor | Type.Pawn];
-        int numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            byte pieceSquare = (byte) Long.numberOfTrailingZeros(tempPieceBB);
-            generatePawnMoves(pieceSquare);
-            tempPieceBB ^= 1L<<pieceSquare;
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Pawn];i++) {
+            generatePawnMoves(pieceSquareList[colorToFindMovesFor | Type.Pawn][i]);
         }
 
-        tempPieceBB= PieceArray[colorToFindMovesFor | Type.Knight];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            byte pieceSquare = (byte) Long.numberOfTrailingZeros(tempPieceBB);
-            generateKnightMoves(pieceSquare, notFriendlyPieces);
-            tempPieceBB ^= 1L<<pieceSquare;
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Knight];i++) {
+            generateKnightMoves(pieceSquareList[colorToFindMovesFor | Type.Knight][i], notFriendlyPieces);
         }
 
-        tempPieceBB= PieceArray[colorToFindMovesFor | Type.Bishop];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            byte pieceSquare = (byte) Long.numberOfTrailingZeros(tempPieceBB);
-            generateBishopMoves(pieceSquare, notFriendlyPieces);
-            tempPieceBB ^= 1L<<pieceSquare;
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Bishop];i++) {
+            generateBishopMoves(pieceSquareList[colorToFindMovesFor | Type.Bishop][i], notFriendlyPieces);
         }
 
-        tempPieceBB=PieceArray[colorToFindMovesFor | Type.Rook];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            byte pieceSquare = (byte) Long.numberOfTrailingZeros(tempPieceBB);
-            generateRookMoves(pieceSquare, notFriendlyPieces);
-            tempPieceBB ^= 1L<<pieceSquare;
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Rook];i++) {
+            generateRookMoves(pieceSquareList[colorToFindMovesFor | Type.Rook][i], notFriendlyPieces);
         }
 
-        tempPieceBB=PieceArray[colorToFindMovesFor | Type.Queen];
-        numIterations = Long.bitCount(tempPieceBB);
-        for (int i=0;i<numIterations;i++) {
-            byte pieceSquare = (byte) Long.numberOfTrailingZeros(tempPieceBB);
-            generateQueenMoves(pieceSquare, notFriendlyPieces);
-            tempPieceBB ^= 1L<<pieceSquare;
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Queen];i++) {
+            generateQueenMoves(pieceSquareList[colorToFindMovesFor | Type.Queen][i], notFriendlyPieces);
         }
 
-        tempPieceBB=PieceArray[colorToFindMovesFor | Type.King];
-        byte tempPS = (byte) Long.numberOfTrailingZeros(tempPieceBB);
-        generateKingMoves(tempPS);
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.King];i++) {
+            generateKingMoves(pieceSquareList[colorToFindMovesFor | Type.King][i]);
+        }
     }
 
     public long findCheckResolveRay(long kingLocation) {//TODO: MAKE FASTER
@@ -1133,7 +1346,7 @@ public class Position {
         newPosition.quietlyEnPassant(fromSquare,toSquare);
         newPosition.whiteToMove = !newPosition.whiteToMove;
         newPosition.calculatePieceLocations();
-        newPosition.calculateSquareAttacks();
+        newPosition.calculateSquareAttacksFromBitboards();
         newPosition.calculateInCheck();
         return newPosition.inCheck;
     }
@@ -1159,6 +1372,127 @@ public class Position {
         hundredHalfmoveTimer=0;
         whiteToMove= !whiteToMove;
         enPassantTargetFiles =0;
+    }
+    public void calculateSquareAttacksFromBitboards() {
+        long tempPieceBB= PieceArray[Type.White | Type.Pawn];
+
+        for (int i=0;i<64;i++) {
+            squareAttacksArray[i]=0;
+        }
+        for (int i=0;i<6;i++) {
+            whiteAttacksArray[i+1]=0;
+            blackAttacksArray[i+1]=0;
+        }
+
+        long whiteBlockers = allPieces ^ PieceArray[Type.Black | Type.King];
+        long blackBlockers = allPieces ^ PieceArray[Type.White | Type.King];
+
+
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceAttackBB = PieceAttack.lookUpWhitePawnAttacks(pieceSquare);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            whiteAttacksArray[Type.Pawn] |= pieceAttackBB;
+            tempPieceBB ^= 1L<<pieceSquare;
+        }
+
+        tempPieceBB= PieceArray[Type.White | Type.Knight];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceSquareBB = 1L<<pieceSquare;
+            long pieceAttackBB = PieceAttack.lookUpKnightAttacks(pieceSquare);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            whiteAttacksArray[Type.Knight] |= pieceAttackBB;
+            tempPieceBB ^= pieceSquareBB;
+        }
+
+        tempPieceBB= PieceArray[Type.White | Type.Bishop];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceSquareBB = 1L<<pieceSquare;
+            long pieceAttackBB = PieceAttack.lookUpBishopAttacks(pieceSquare,whiteBlockers);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            whiteAttacksArray[Type.Bishop] |= pieceAttackBB;
+            tempPieceBB ^= 1L<<pieceSquare;
+        }
+
+        tempPieceBB=PieceArray[Type.White | Type.Rook];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceAttackBB = PieceAttack.lookUpRookAttacks(pieceSquare,whiteBlockers);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            whiteAttacksArray[Type.Rook] |= pieceAttackBB;
+            tempPieceBB ^= 1L<<pieceSquare;
+        }
+
+        tempPieceBB=PieceArray[Type.White | Type.Queen];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceAttackBB = PieceAttack.lookUpQueenAttacks(pieceSquare,whiteBlockers);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            whiteAttacksArray[Type.Queen] |= pieceAttackBB;
+            tempPieceBB ^= 1L<<pieceSquare;
+        }
+
+        tempPieceBB=PieceArray[Type.White | Type.King];
+        int tempPS = Long.numberOfTrailingZeros(tempPieceBB);
+        long tempPABB = PieceAttack.lookUpKingAttacks(tempPS);
+        squareAttacksArray[tempPS]= tempPABB;
+        whiteAttacksArray[Type.King] |= tempPABB;
+
+
+        tempPieceBB= PieceArray[Type.Black | Type.Pawn];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceAttackBB = PieceAttack.lookUpBlackPawnAttacks(pieceSquare);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            blackAttacksArray[Type.Pawn] |= pieceAttackBB;
+            tempPieceBB ^= 1L<<pieceSquare;
+        }
+
+        tempPieceBB= PieceArray[Type.Black | Type.Knight];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceSquareBB = 1L<<pieceSquare;
+            long pieceAttackBB = PieceAttack.lookUpKnightAttacks(pieceSquare);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            blackAttacksArray[Type.Knight] |= pieceAttackBB;
+            tempPieceBB ^= pieceSquareBB;
+        }
+
+        tempPieceBB= PieceArray[Type.Black | Type.Bishop];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceAttackBB = PieceAttack.lookUpBishopAttacks(pieceSquare,blackBlockers);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            blackAttacksArray[Type.Bishop] |= pieceAttackBB;
+            tempPieceBB ^= 1L<<pieceSquare;
+        }
+
+        tempPieceBB=PieceArray[Type.Black | Type.Rook];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceAttackBB = PieceAttack.lookUpRookAttacks(pieceSquare,blackBlockers);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            blackAttacksArray[Type.Rook] |= pieceAttackBB;
+            tempPieceBB ^= 1L<<pieceSquare;
+        }
+
+        tempPieceBB=PieceArray[Type.Black | Type.Queen];
+        while (tempPieceBB !=0) {
+            int pieceSquare = Long.numberOfTrailingZeros(tempPieceBB);
+            long pieceAttackBB = PieceAttack.lookUpQueenAttacks(pieceSquare,blackBlockers);
+            squareAttacksArray[pieceSquare]= pieceAttackBB;
+            blackAttacksArray[Type.Queen] |= pieceAttackBB;
+            tempPieceBB ^= 1L<<pieceSquare;
+        }
+
+        tempPieceBB=PieceArray[Type.Black | Type.King];
+        tempPS = Long.numberOfTrailingZeros(tempPieceBB);
+        tempPABB = PieceAttack.lookUpKingAttacks(tempPS);
+        squareAttacksArray[tempPS]= tempPABB;
+        blackAttacksArray[Type.King] |= tempPABB;
+
     }
 
     public void printFen() {
@@ -1275,11 +1609,9 @@ public class Position {
 
     private static int[] cloneMoveArray(int[] input, int indexOfFirstEmptyMove) {
         int[] ret = new int[218];
-        System.arraycopy(input, 0, ret, 0,218);
+        System.arraycopy(input, 0, ret, 0,indexOfFirstEmptyMove);
         return ret;
     }
-
-
     private static long toBitboard (int square){
         return 1L<<square;
     }

@@ -30,7 +30,7 @@ public class MainEngine {
 
     public static void startPosition() {
         String startingPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        CurrentPosition.InitializePosition(startingPosition,true,true, 200);
+        CurrentPosition.InitializePosition(startingPosition,true,true, 2000);
         //Normal starting position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
     }
 }
