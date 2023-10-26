@@ -13,7 +13,6 @@ public class MoveMaker implements Runnable{
 
     Evaluator evaluator;
     Thread bestMoveFinder;
-    boolean waitForEvaluation=false;
 
     public MoveMaker(Position pos, boolean playAsWhite, int waitTimeMS, boolean makeMoves) {
         this.pos=pos;
