@@ -13,6 +13,7 @@ public class MoveMaker implements Runnable{
 
     Evaluator evaluator;
     Thread bestMoveFinder;
+    boolean waitForEvaluation=false;
 
     public MoveMaker(Position pos, boolean playAsWhite, int waitTimeMS, boolean makeMoves) {
         this.pos=pos;
@@ -41,7 +42,7 @@ public class MoveMaker implements Runnable{
             Graphical.stopAllMoves=true;
             startMoveSearch();
             try {
-                Thread.sleep(waitTimeMS);
+                bestMoveFinder.join();
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }

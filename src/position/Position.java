@@ -40,7 +40,7 @@ public class Position {
     public Stack<Integer> PreviousHalfMoveTimers = new Stack<>();
     public Stack<Long> PreviousCastlingRights = new Stack<>();
     public Stack<int[]> PreviousMovelists = new Stack<int[]>();
-    public Stack<Integer> PreviousIndexOfFirstEmptyMove= new Stack<>();
+    public Stack<Integer> PreviousIndexOfFirstEmptyMove = new Stack<>();
 
     public long whiteAttacksArray[] = new long[7];
     public long whiteAttacks;
@@ -723,10 +723,10 @@ public class Position {
                 PieceArray[colorPromoting | Type.Rook]^=toSquareBB;
                 PieceArray[capturedPiece] ^=toSquareBB;
             }
-
         }
 
         whiteToMove= !whiteToMove;
+        gameState = calculateGameState();
         enPassantTargetFiles= PreviousEnPassantTargetFiles.pop();
         castlingRights= PreviousCastlingRights.pop();
         hundredHalfmoveTimer= PreviousHalfMoveTimers.pop();
@@ -735,7 +735,7 @@ public class Position {
     }
     public void calculatePreCalculatedData() {
         calculatePieceLocations();
-        calculateSquareAttacks();//Also initializes white and black attacking bitboards
+        calculateSquareAttacks();
         calculateInCheck();
         calculateCheckResolveRay();
         calculatePinRay();
@@ -1151,7 +1151,7 @@ public class Position {
             byte tempToSquare= (byte)Long.numberOfTrailingZeros(toSquareBB);
             legalMoves[indexOfFirstEmptyMove] = Move.makeMoveFromBytes(moveType,fromSquare,tempToSquare,squareCentricPos[tempToSquare]);
             indexOfFirstEmptyMove++;
-            toSquareBB^= 1L<<tempToSquare;
+            toSquareBB &= toSquareBB-1;
         }
     }
 
