@@ -4,7 +4,6 @@ import gui.FrameHolder;
 import gui.Graphical;
 import position.CurrentPosition;
 import position.Position;
-import move.Move;
 
 public class MoveMaker implements Runnable{
     Position pos;
@@ -12,7 +11,8 @@ public class MoveMaker implements Runnable{
     boolean makeMoves;
     int waitTimeMS;
 
-    int indexOfBestMove;
+    Evaluator evaluator;
+    Thread bestMoveFinder;
 
     public MoveMaker(Position pos, boolean playAsWhite, int waitTimeMS, boolean makeMoves) {
         this.pos=pos;
@@ -21,12 +21,13 @@ public class MoveMaker implements Runnable{
         this.makeMoves=makeMoves;
     }
 
-    public int findBestMove() {
-        indexOfBestMove = (int)(Math.random()*pos.indexOfFirstEmptyMove);
-        return pos.legalMoves[indexOfBestMove];
+    private void startMoveSearch() {
+        evaluator = new Evaluator();
+        bestMoveFinder = new Thread(evaluator);
+        bestMoveFinder.start();
     }
 
-    public void makeBestMove(int move) {
+    private void makeBestMove(int move) {
         pos.makeMove(move);
     }
 
@@ -38,12 +39,13 @@ public class MoveMaker implements Runnable{
     public void run() {
         if (makeMoves & (pos.whiteToMove==playAsWhite)) {
             Graphical.stopAllMoves=true;
+            startMoveSearch();
             try {
                 Thread.sleep(waitTimeMS);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
-            makeBestMove(findBestMove());
+            makeBestMove(evaluator.bestMove);
             FrameHolder.chessGraphics.updateGraphics();
             Graphical.stopAllMoves=false;
             CurrentPosition.updateMoveMakers();

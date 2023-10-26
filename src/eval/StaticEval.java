@@ -17,28 +17,43 @@ public class StaticEval {
     static final int endGameQueenValue = 1050;
 
     public static int evaluate(Position pos) {
-        if (pos.gameState == Type.midGame)return midGameEvaluationOf(pos);
-        return endGameEvaluationOf(pos);
+        switch (pos.gameState) {
+            case Type.midGame -> {
+                return midGameEvaluationOf(pos);
+            }
+            case Type.endGame -> {
+                return endGameEvaluationOf(pos);
+            }
+            case Type.blackIsCheckmated -> {
+                return Integer.MIN_VALUE;
+            }
+            case Type.whiteIsCheckmated -> {
+                return Integer.MAX_VALUE;
+            }
+            default -> {//Type.gameIsADraw
+                return 0;
+            }
+        }
     }
     private static int midGameEvaluationOf(Position pos) {//return a high value if good for player to move, low value if not
         int eval = midGameKingSafety(pos);
-        if (eval==Integer.MIN_VALUE || eval==Integer.MAX_VALUE)return eval;
         eval += midGamePawnWeight(pos);
         eval += midGameKnightWeight(pos);
         eval += midGameBishopWeight(pos);
         eval += midGameRookWeight(pos);
         eval += midGameQueenWeight(pos);
-        return eval;
+        if (pos.whiteToMove)return eval;
+        return -eval;
     }
     private static int endGameEvaluationOf(Position pos) {
         int eval = endGameKingSafety(pos);
-        if (eval==Integer.MIN_VALUE || eval==Integer.MAX_VALUE)return eval;
         eval += endGamePawnWeight(pos);
         eval += endGameKnightWeight(pos);
         eval += endGameBishopWeight(pos);
         eval += endGameRookWeight(pos);
         eval += endGameQueenWeight(pos);
-        return eval;
+        if (pos.whiteToMove)return eval;
+        return -eval;
     }
 
     //right now the code for evaluating the position is a bit repetitive, but I should keep it this way if I need to
@@ -53,12 +68,12 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whitePawn];i++) {
-            int index = pos.pieceSquareList[whitePawn][i];
-            wpLocationFactor += PieceWeights.midGameWhitePawnTable[pos.pieceSquareList[whitePawn][index]];
+            int square = pos.pieceSquareList[whitePawn][i];
+            wpLocationFactor += PieceWeights.midGameWhitePawnTable[square];
         }
         for (int i=0;i<pos.numPieces[blackPawn];i++) {
-            int index = pos.pieceSquareList[blackPawn][i];
-            bpLocationFactor += PieceWeights.midGameBlackPawnTable[pos.pieceSquareList[blackPawn][index]];
+            int square = pos.pieceSquareList[blackPawn][i];
+            bpLocationFactor += PieceWeights.midGameBlackPawnTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -73,12 +88,12 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whiteKnight];i++) {
-            int index = pos.pieceSquareList[whiteKnight][i];
-            wpLocationFactor += PieceWeights.whiteKnightTable[pos.pieceSquareList[whiteKnight][index]];
+            int square = pos.pieceSquareList[whiteKnight][i];
+            wpLocationFactor += PieceWeights.whiteKnightTable[square];
         }
         for (int i=0;i<pos.numPieces[blackKnight];i++) {
-            int index = pos.pieceSquareList[blackKnight][i];
-            bpLocationFactor += PieceWeights.blackKnightTable[pos.pieceSquareList[blackKnight][index]];
+            int square = pos.pieceSquareList[blackKnight][i];
+            bpLocationFactor += PieceWeights.blackKnightTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -93,12 +108,12 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whiteBishop];i++) {
-            int index = pos.pieceSquareList[whiteBishop][i];
-            wpLocationFactor += PieceWeights.whiteBishopTable[pos.pieceSquareList[whiteBishop][index]];
+            int square = pos.pieceSquareList[whiteBishop][i];
+            wpLocationFactor += PieceWeights.whiteBishopTable[square];
         }
         for (int i=0;i<pos.numPieces[whiteBishop];i++) {
-            int index = pos.pieceSquareList[whiteBishop][i];
-            bpLocationFactor += PieceWeights.blackBishopTable[pos.pieceSquareList[whiteBishop][index]];
+            int square = pos.pieceSquareList[whiteBishop][i];
+            bpLocationFactor += PieceWeights.blackBishopTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -113,12 +128,12 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whiteRook];i++) {
-            int index = pos.pieceSquareList[whiteRook][i];
-            wpLocationFactor += PieceWeights.whiteRookTable[pos.pieceSquareList[whiteRook][index]];
+            int square = pos.pieceSquareList[whiteRook][i];
+            wpLocationFactor += PieceWeights.whiteRookTable[square];
         }
         for (int i=0;i<pos.numPieces[blackRook];i++) {
-            int index = pos.pieceSquareList[blackRook][i];
-            bpLocationFactor += PieceWeights.blackRookTable[pos.pieceSquareList[blackRook][index]];
+            int square = pos.pieceSquareList[blackRook][i];
+            bpLocationFactor += PieceWeights.blackRookTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -133,31 +148,23 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whiteQueen];i++) {
-            int index = pos.pieceSquareList[whiteQueen][i];
-            wpLocationFactor += PieceWeights.whiteQueenTable[pos.pieceSquareList[whiteQueen][index]];
+            int square = pos.pieceSquareList[whiteQueen][i];
+            wpLocationFactor += PieceWeights.whiteQueenTable[square];
         }
         for (int i=0;i<pos.numPieces[blackQueen];i++) {
-            int index = pos.pieceSquareList[blackQueen][i];
-            bpLocationFactor += PieceWeights.blackQueenTable[pos.pieceSquareList[blackQueen][index]];
+            int square = pos.pieceSquareList[blackQueen][i];
+            bpLocationFactor += PieceWeights.blackQueenTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
     }
     private static int midGameKingSafety(Position pos) {
-        if (pos.isCheckMate) {
-            if (pos.whiteToMove) {//black got mated
-                return Integer.MAX_VALUE;
-            }
-            else {//white got mated
-                return Integer.MIN_VALUE;
-            }
-        }
         //evaluate white king safety
         int whiteKingSafety= PieceWeights.midGameWhiteKingTable[pos.pieceSquareList[Type.White | Type.King][0]];
 
 
         //evaluate black king safety
-        int blackKingSafety= PieceWeights.midGameWhiteKingTable[pos.pieceSquareList[Type.Black | Type.King][0]];
+        int blackKingSafety= PieceWeights.midGameBlackKingTable[pos.pieceSquareList[Type.Black | Type.King][0]];
 
 
 
@@ -174,12 +181,12 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whitePawn];i++) {
-            int index = pos.pieceSquareList[whitePawn][i];
-            wpLocationFactor += PieceWeights.endGameWhitePawnTable[pos.pieceSquareList[whitePawn][index]];
+            int square = pos.pieceSquareList[whitePawn][i];
+            wpLocationFactor += PieceWeights.endGameWhitePawnTable[square];
         }
         for (int i=0;i<pos.numPieces[blackPawn];i++) {
-            int index = pos.pieceSquareList[blackPawn][i];
-            bpLocationFactor += PieceWeights.endGameBlackPawnTable[pos.pieceSquareList[blackPawn][index]];
+            int square = pos.pieceSquareList[blackPawn][i];
+            bpLocationFactor += PieceWeights.endGameBlackPawnTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -194,12 +201,12 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whiteKnight];i++) {
-            int index = pos.pieceSquareList[whiteKnight][i];
-            wpLocationFactor += PieceWeights.whiteKnightTable[pos.pieceSquareList[whiteKnight][index]];
+            int square = pos.pieceSquareList[whiteKnight][i];
+            wpLocationFactor += PieceWeights.whiteKnightTable[square];
         }
         for (int i=0;i<pos.numPieces[blackKnight];i++) {
-            int index = pos.pieceSquareList[blackKnight][i];
-            bpLocationFactor += PieceWeights.blackKnightTable[pos.pieceSquareList[blackKnight][index]];
+            int square = pos.pieceSquareList[blackKnight][i];
+            bpLocationFactor += PieceWeights.blackKnightTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -214,12 +221,12 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whiteBishop];i++) {
-            int index = pos.pieceSquareList[whiteBishop][i];
-            wpLocationFactor += PieceWeights.whiteBishopTable[pos.pieceSquareList[whiteBishop][index]];
+            int square = pos.pieceSquareList[whiteBishop][i];
+            wpLocationFactor += PieceWeights.whiteBishopTable[square];
         }
         for (int i=0;i<pos.numPieces[whiteBishop];i++) {
-            int index = pos.pieceSquareList[whiteBishop][i];
-            bpLocationFactor += PieceWeights.blackBishopTable[pos.pieceSquareList[whiteBishop][index]];
+            int square = pos.pieceSquareList[whiteBishop][i];
+            bpLocationFactor += PieceWeights.blackBishopTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -234,12 +241,12 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whiteRook];i++) {
-            int index = pos.pieceSquareList[whiteRook][i];
-            wpLocationFactor += PieceWeights.whiteRookTable[pos.pieceSquareList[whiteRook][index]];
+            int square = pos.pieceSquareList[whiteRook][i];
+            wpLocationFactor += PieceWeights.whiteRookTable[square];
         }
         for (int i=0;i<pos.numPieces[blackRook];i++) {
-            int index = pos.pieceSquareList[blackRook][i];
-            bpLocationFactor += PieceWeights.blackRookTable[pos.pieceSquareList[blackRook][index]];
+            int square = pos.pieceSquareList[blackRook][i];
+            bpLocationFactor += PieceWeights.blackRookTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -254,31 +261,23 @@ public class StaticEval {
         int wpLocationFactor=0;
         int bpLocationFactor=0;
         for (int i=0;i<pos.numPieces[whiteQueen];i++) {
-            int index = pos.pieceSquareList[whiteQueen][i];
-            wpLocationFactor += PieceWeights.whiteQueenTable[pos.pieceSquareList[whiteQueen][index]];
+            int square = pos.pieceSquareList[whiteQueen][i];
+            wpLocationFactor += PieceWeights.whiteQueenTable[square];
         }
         for (int i=0;i<pos.numPieces[blackQueen];i++) {
-            int index = pos.pieceSquareList[blackQueen][i];
-            bpLocationFactor += PieceWeights.blackQueenTable[pos.pieceSquareList[blackQueen][index]];
+            int square = pos.pieceSquareList[blackQueen][i];
+            bpLocationFactor += PieceWeights.blackQueenTable[square];
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
     }
     private static int endGameKingSafety(Position pos) {
-        if (pos.isCheckMate) {
-            if (pos.whiteToMove) {//black got mated
-                return Integer.MAX_VALUE;
-            }
-            else {//white got mated
-                return Integer.MIN_VALUE;
-            }
-        }
         //evaluate white king safety
         int whiteKingSafety= PieceWeights.endGameWhiteKingTable[pos.pieceSquareList[Type.White | Type.King][0]];
 
 
         //evaluate black king safety
-        int blackKingSafety= PieceWeights.endGameWhiteKingTable[pos.pieceSquareList[Type.Black | Type.King][0]];
+        int blackKingSafety= PieceWeights.endGameBlackKingTable[pos.pieceSquareList[Type.Black | Type.King][0]];
 
 
 

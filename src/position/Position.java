@@ -64,8 +64,6 @@ public class Position {
     public int indexOfPin;
     public long pinnedPieces;
 
-    public boolean isCheckMate = false;
-
     public Position(String fen) {
         int indexOfFirstSpace= fen.indexOf(' ');
         String temp = "";

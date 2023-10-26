@@ -6,7 +6,7 @@ import position.CurrentPosition;
 import position.Position;
 import position.Type;
 
-public class Evaluator implements Runnable{
+public class Evaluator implements Runnable{//always analyzes the current position
 
     public int bestMove;
     @Override
@@ -14,7 +14,7 @@ public class Evaluator implements Runnable{
         //make a new position that is a copy of the old one
         Position pos= new Position(CurrentPosition.position.getFen());//probably too slow, def a way to make faster
 
-        for (int i=1;i<100;i++) {//goes to depth 100, effectively infinite depth
+        for (int i=1;i<2;i++) {//goes to depth 100, effectively infinite depth
             findBestMove(pos,i);
         }
     }
@@ -45,9 +45,9 @@ public class Evaluator implements Runnable{
         alpha = Math.max(alpha, standingPat);
 
         for (int i=0;i<pos.indexOfFirstEmptyMove;i++) {
-            int moveEvaluating = Move.getCapturedPieceFromMove(pos.legalMoves[i]);
+            int moveEvaluating = pos.legalMoves[i];
 
-            if (moveEvaluating != Type.Empty) {//only look deeper for captures
+            if (Move.getCapturedPieceFromMove(moveEvaluating) != Type.Empty) {//only look deeper for captures
                 pos.makeMove(moveEvaluating);
                 int eval = -quiescenceEvaluation(pos, -beta, -alpha);
                 pos.unmakeMove(moveEvaluating);
