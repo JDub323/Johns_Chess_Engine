@@ -32,7 +32,13 @@ public class Type {
     public static final byte pawnPromotesToN=5;
     public static final byte pawnPromotesToB=6;
     public static final byte pawnPromotesToR=7;
-    public static final byte illegalMove=-1;
+
+    //possible states the game could be in
+    public static final byte midGame=0;
+    public static final byte endGame=1;
+    public static final byte blackIsCheckmated=2;
+    public static final byte whiteIsCheckmated=3;
+    public static final byte gameIsADraw=4;
 
     //pin directions
     public static final byte pinRight=0;

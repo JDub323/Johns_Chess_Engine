@@ -1,5 +1,6 @@
 package position;
 
+import eval.StaticEval;
 import move.Move;
 import move.PieceAttack;
 import java.util.Stack;
@@ -20,17 +21,18 @@ public class Position {
         pieceSquareList[Type.White | Type.Knight] = new byte[10];//max 10 knights with 8 pawn underpromotions
         pieceSquareList[Type.White | Type.Bishop] = new byte[10];//same idea for the rest of the pieces
         pieceSquareList[Type.White | Type.Rook] = new byte[10];
-        pieceSquareList[Type.White | Type.Queen] = new byte[10];
+        pieceSquareList[Type.White | Type.Queen] = new byte[9];
         pieceSquareList[Type.White | Type.King] = new byte[1];
         pieceSquareList[Type.Black | Type.Pawn] = new byte[8];
         pieceSquareList[Type.Black | Type.Knight] = new byte[10];
         pieceSquareList[Type.Black | Type.Bishop] = new byte[10];
         pieceSquareList[Type.Black | Type.Rook] = new byte[10];
-        pieceSquareList[Type.Black | Type.Queen] = new byte[10];
+        pieceSquareList[Type.Black | Type.Queen] = new byte[9];
         pieceSquareList[Type.Black | Type.King] = new byte[1];
     }
     public byte[] numPieces = new byte[15];
     public byte[][] colorIndexBoard = new byte[2][64];//0 for white, 1 for black
+    public byte gameState;
 
     //additional useful variables in the position
     public Stack<Integer> PreviousMadeMoves = new Stack<>();
@@ -740,6 +742,7 @@ public class Position {
         calculateCheckResolveRay();
         calculatePinRay();
         findLegalMoves();
+        gameState = calculateGameState();
     }
 
     public void calculatePieceLocations() {
@@ -1026,6 +1029,21 @@ public class Position {
         for (int i=0;i<numPieces[colorToFindMovesFor | Type.King];i++) {
             generateKingMoves(pieceSquareList[colorToFindMovesFor | Type.King][i]);
         }
+    }
+    public byte calculateGameState() {
+        if (indexOfFirstEmptyMove==0) {
+            if (inCheck) {
+                if (whiteToMove)return Type.whiteIsCheckmated;
+                return Type.blackIsCheckmated;
+            }
+            return Type.gameIsADraw;
+        }
+
+        //only check white's number of pieces for the switch to the endgame, can assume piece count is similiar for black
+        int pieceCount = numPieces[Type.Knight] + numPieces[Type.Bishop] + numPieces[Type.Rook] + numPieces[Type.Queen];
+        //if there are 3 or fewer pieces for each color, then it is the endGame
+        if (pieceCount > 3)return Type.midGame;
+        return Type.endGame;
     }
 
     public long findCheckResolveRay(long kingLocation) {//TODO: MAKE FASTER
@@ -1496,6 +1514,9 @@ public class Position {
     }
 
     public void printFen() {
+        System.out.print(getFen());
+    }
+    public String getFen() {
         String fen="";
         int tickerSquare;//start on top left square
         int emptySquareCounter=0;
@@ -1562,7 +1583,7 @@ public class Position {
 
         fen+=" "+hundredHalfmoveTimer+" ";
         fen+=0;//not keeping track of the move timer
-        System.out.print(fen);
+        return fen;
     }
     private String getPieceStringFromShort(short piece) {//assume not empty
         switch (piece) {

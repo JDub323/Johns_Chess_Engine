@@ -1,22 +1,20 @@
 package engine;
 
 import eval.StaticEval;
+import move.Move;
 import position.CurrentPosition;
 import position.Position;
-import move.Move;
+import position.Type;
 
 public class Evaluator implements Runnable{
 
     public int bestMove;
     @Override
     public void run() {
-        long[] tempPA = CurrentPosition.position.PieceArray;
-        byte[] tempSCP = CurrentPosition.position.squareCentricPos;
-        boolean tempWTM = CurrentPosition.position.whiteToMove;
-        Position pos= new Position(tempPA,tempSCP,tempWTM);
-        pos.calculatePreCalculatedData();
+        //make a new position that is a copy of the old one
+        Position pos= new Position(CurrentPosition.position.getFen());//probably too slow, def a way to make faster
 
-        for (int i=1;i<100;i++) {
+        for (int i=1;i<100;i++) {//goes to depth 100, effectively infinite depth
             findBestMove(pos,i);
         }
     }
@@ -24,20 +22,16 @@ public class Evaluator implements Runnable{
 
     private int evaluatePosition(Position pos, int depth, int alpha, int beta) {
         if (depth==0) {
-            return StaticEval.evaluationOf(pos);
-        }
-
-        if (pos.indexOfFirstEmptyMove==0) {
-            if (pos.whiteToMove && pos.inCheck)return Integer.MIN_VALUE;
-            if (pos.inCheck)return Integer.MAX_VALUE;
-            return 0;
+            return quiescenceEvaluation(pos, -beta, -alpha);
         }
 
         for (int i=0;i< pos.indexOfFirstEmptyMove;i++) {
             int moveToMake = pos.legalMoves[i];
+
             pos.makeMove(moveToMake);
-            int eval = -evaluatePosition(pos,depth-1,-alpha,-beta);
+            int eval = -evaluatePosition(pos,depth-1,-beta,-alpha);
             pos.unmakeMove(moveToMake);
+
             if (eval>=beta) {
                 return beta;
             }
@@ -45,18 +39,35 @@ public class Evaluator implements Runnable{
         }
         return alpha;
     }
+    private int quiescenceEvaluation(Position pos, int alpha, int beta) {
+        int standingPat = StaticEval.evaluate(pos);
+        if (standingPat >= beta) return beta;
+        alpha = Math.max(alpha, standingPat);
 
-    private void findBestMove(Position pos, int depth) {
-        int tempMove = pos.legalMoves[0];
-        pos.makeMove(tempMove);
-        int bestEval = evaluatePosition(pos,1,Integer.MIN_VALUE,Integer.MAX_VALUE);
-        pos.unmakeMove(tempMove);
+        for (int i=0;i<pos.indexOfFirstEmptyMove;i++) {
+            int moveEvaluating = Move.getCapturedPieceFromMove(pos.legalMoves[i]);
+
+            if (moveEvaluating != Type.Empty) {//only look deeper for captures
+                pos.makeMove(moveEvaluating);
+                int eval = -quiescenceEvaluation(pos, -beta, -alpha);
+                pos.unmakeMove(moveEvaluating);
+
+                if (eval >= beta)return beta;
+                alpha = Math.max(alpha, eval);
+            }
+        }
+        return alpha;
+    }
+    private void findBestMove(Position pos, int depth) {//TODO: add alpha beta pruning to this level
+        int bestEval = Integer.MIN_VALUE;
         int tempBestMove = pos.legalMoves[0];
+        int alpha = Integer.MIN_VALUE;
+        int beta = Integer.MAX_VALUE;
 
         for (int i=1;i<pos.indexOfFirstEmptyMove;i++) {
             int moveToMake = pos.legalMoves[i];
             pos.makeMove(moveToMake);
-            int eval = evaluatePosition(pos,1,0,0);
+            int eval = evaluatePosition(pos, depth, alpha, beta);
             pos.unmakeMove(moveToMake);
             if (eval>bestEval)tempBestMove = pos.legalMoves[i];
         }
