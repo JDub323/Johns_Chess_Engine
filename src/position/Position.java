@@ -1149,7 +1149,8 @@ public class Position {
         int numMovesToAdd = Long.bitCount(toSquareBB);
         for (int i=0;i<numMovesToAdd;i++) {
             byte tempToSquare= (byte)Long.numberOfTrailingZeros(toSquareBB);
-            legalMoves[indexOfFirstEmptyMove] = Move.makeMoveFromBytes(moveType,fromSquare,tempToSquare,squareCentricPos[tempToSquare]);
+            int newMove = Move.makeMoveFromBytes(moveType,fromSquare,tempToSquare,squareCentricPos[tempToSquare]);
+            legalMoves[indexOfFirstEmptyMove] = newMove;
             indexOfFirstEmptyMove++;
             toSquareBB &= toSquareBB-1;
         }
