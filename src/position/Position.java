@@ -1146,8 +1146,7 @@ public class Position {
     }
 
     public void addMovesToMoveList(byte moveType, byte fromSquare, long toSquareBB) {//TODO: can make even faster
-        int numMovesToAdd = Long.bitCount(toSquareBB);
-        for (int i=0;i<numMovesToAdd;i++) {
+        while (toSquareBB != 0) {
             byte tempToSquare= (byte)Long.numberOfTrailingZeros(toSquareBB);
             int newMove = Move.makeMoveFromBytes(moveType,fromSquare,tempToSquare,squareCentricPos[tempToSquare]);
             legalMoves[indexOfFirstEmptyMove] = newMove;
