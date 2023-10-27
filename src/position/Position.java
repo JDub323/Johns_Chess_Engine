@@ -156,8 +156,17 @@ public class Position {
         this.whiteToMove=whiteToMove;
     }
 
-    public void makeMove(int move) {//TODO: make only one switch case, not two
-
+    //TODO: fix a probable bug in the way castling works with piece lists
+    //I sometimes get huge error messages when I castling is legal or when I move a King
+    public void makeMove(int move) {
+        quietlyMakeMove(move);
+        calculatePreCalculatedData();
+    }
+    public void makeMoveAndOnlyFindCaptures(int move) {
+        quietlyMakeMove(move);
+        calculateCapturingMovesOnly();
+    }
+    private void quietlyMakeMove(int move) {//TODO: make only one switch case, not two
         PreviousMadeMoves.push(move);
         PreviousCastlingRights.push(castlingRights);
         PreviousEnPassantTargetFiles.push(enPassantTargetFiles);
@@ -463,8 +472,6 @@ public class Position {
 
 
         indexOfFirstEmptyMove=0;
-
-        calculatePreCalculatedData();
     }
     public void unmakeMove(int move) {
         byte fromSquare = Move.getFromSquareFromMove(move);
@@ -739,6 +746,16 @@ public class Position {
         calculateInCheck();
         calculateCheckResolveRay();
         calculatePinRay();
+        findLegalMoves();
+        gameState = calculateGameState();
+    }
+    public void calculateCapturingMovesOnly() {
+        calculatePieceLocations();
+        calculateSquareAttacks();
+        calculateInCheck();
+        calculateCheckResolveRay();
+        calculatePinRay();
+        makeSquareAttackCapturesOnly();
         findLegalMoves();
         gameState = calculateGameState();
     }
@@ -1042,6 +1059,47 @@ public class Position {
         //if there are 3 or fewer pieces for each color, then it is the endGame
         if (pieceCount > 3)return Type.midGame;
         return Type.endGame;
+    }
+
+    private void makeSquareAttackCapturesOnly() {
+
+        for (int i=0;i<numPieces[Type.White | Type.Pawn];i++) {
+            squareAttacksArray[pieceSquareList[Type.White | Type.Pawn][i]] &= blackPieces;
+        }
+        for (int i=0;i<numPieces[Type.White | Type.Knight];i++) {
+            squareAttacksArray[pieceSquareList[Type.White | Type.Knight][i]] &= blackPieces;
+        }
+        for (int i=0;i<numPieces[Type.White | Type.Bishop];i++) {
+            squareAttacksArray[pieceSquareList[Type.White | Type.Bishop][i]] &= blackPieces;
+        }
+        for (int i=0;i<numPieces[Type.White | Type.Rook];i++) {
+            squareAttacksArray[pieceSquareList[Type.White | Type.Rook][i]] &= blackPieces;
+        }
+        for (int i=0;i<numPieces[Type.White | Type.Queen];i++) {
+            squareAttacksArray[pieceSquareList[Type.White | Type.Queen][i]] &= blackPieces;
+        }
+        for (int i=0;i<numPieces[Type.White | Type.King];i++) {
+            squareAttacksArray[pieceSquareList[Type.White | Type.King][i]] &= blackPieces;
+        }
+
+        for (int i=0;i<numPieces[Type.Black | Type.Pawn];i++) {
+            squareAttacksArray[pieceSquareList[Type.Black | Type.Pawn][i]] &= whitePieces;
+        }
+        for (int i=0;i<numPieces[Type.Black | Type.Knight];i++) {
+            squareAttacksArray[pieceSquareList[Type.Black | Type.Knight][i]] &= whitePieces;
+        }
+        for (int i=0;i<numPieces[Type.Black | Type.Bishop];i++) {
+            squareAttacksArray[pieceSquareList[Type.Black | Type.Bishop][i]] &= whitePieces;
+        }
+        for (int i=0;i<numPieces[Type.Black | Type.Rook];i++) {
+            squareAttacksArray[pieceSquareList[Type.Black | Type.Rook][i]] &= whitePieces;
+        }
+        for (int i=0;i<numPieces[Type.Black | Type.Queen];i++) {
+            squareAttacksArray[pieceSquareList[Type.Black | Type.Queen][i]] &= whitePieces;
+        }
+        for (int i=0;i<numPieces[Type.Black | Type.King];i++) {
+            squareAttacksArray[pieceSquareList[Type.Black | Type.King][i]] &= whitePieces;
+        }
     }
 
     public long findCheckResolveRay(long kingLocation) {//TODO: MAKE FASTER
@@ -1366,7 +1424,7 @@ public class Position {
         newPosition.calculateInCheck();
         return newPosition.inCheck;
     }
-    private void quietlyEnPassant(byte fromSquare, byte toSquare) {
+    private void quietlyEnPassant(byte fromSquare, byte toSquare) {//TODO: refactor and delete this
         long fromSquareBB = toBitboard(fromSquare);
         long toSquareBB = toBitboard(toSquare);
         byte movingPiece = squareCentricPos[fromSquare];
@@ -1624,7 +1682,6 @@ public class Position {
         }
         return "invalidInputError";
     }
-
 
     private static int[] cloneMoveArray(int[] input, int indexOfFirstEmptyMove) {
         int[] ret = new int[218];

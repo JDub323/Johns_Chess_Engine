@@ -15,7 +15,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
         //make a new position that is a copy of the old one
         Position pos= new Position(CurrentPosition.position.getFen());//probably too slow, def a way to make faster
 
-        findBestMove(pos,4);
+        findBestMove(pos,3);
     }
 
 /*  IN CASE I NEED TO INTERRUPT THE AI EARLY
@@ -27,8 +27,8 @@ while (!exit) {
  */
 
     private int evaluatePosition(Position pos, int depth, int alpha, int beta) {
-        if (depth==0) {// should be quiescenceEvaluation(pos, -beta, -alpha); in the future or maybe just (pos, alpha, beta), unsure
-            return StaticEval.evaluate(pos);
+        if (depth==0) {
+            return quiescenceEvaluation(pos, alpha, beta);
         }
 
         for (int i=0;i< pos.indexOfFirstEmptyMove;i++) {
@@ -54,7 +54,7 @@ while (!exit) {
             int moveEvaluating = pos.legalMoves[i];
 
             if (Move.getCapturedPieceFromMove(moveEvaluating) != Type.Empty) {//only look deeper for captures
-                pos.makeMove(moveEvaluating);
+                pos.makeMoveAndOnlyFindCaptures(moveEvaluating);
                 int eval = -quiescenceEvaluation(pos, -beta, -alpha);
                 pos.unmakeMove(moveEvaluating);
 
