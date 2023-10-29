@@ -91,4 +91,7 @@ public class Move {
     public static int makeMoveFromBytes(byte moveType, byte fromSquare, byte toSquare, byte capturedPiece) {
         return moveType<<24 | fromSquare<<16 | toSquare<<8 | capturedPiece;
     }
+    public static int getMoveFromMovePriority(long complexMove) {
+        return (int) ((complexMove<<32)>>>32);
+    }
 }

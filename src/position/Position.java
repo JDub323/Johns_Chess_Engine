@@ -1,6 +1,5 @@
 package position;
 
-import eval.StaticEval;
 import move.Move;
 import move.PieceAttack;
 import java.util.Stack;
@@ -59,7 +58,8 @@ public class Position {
 
     public int indexOfFirstEmptyMove;
 
-    public int[] legalMoves= new int[218];
+    public int[] legalMoves = new int[218];
+    public int[] legalMovePriorities = new int[218];
 
     public int indexOfPin;
     public long pinnedPieces;
@@ -158,6 +158,7 @@ public class Position {
 
     //TODO: fix a probable bug in the way castling works with piece lists
     //I sometimes get huge error messages when I castling is legal or when I move a King
+    //Find out if the bug only exists in quiescence eval
     public void makeMove(int move) {
         quietlyMakeMove(move);
         calculatePreCalculatedData();
@@ -748,6 +749,7 @@ public class Position {
         calculatePinRay();
         findLegalMoves();
         gameState = calculateGameState();
+        generateMoveEvalOrder();
     }
     public void calculateCapturingMovesOnly() {
         calculatePieceLocations();
@@ -758,6 +760,7 @@ public class Position {
         makeSquareAttackCapturesOnly();
         findLegalMoves();
         gameState = calculateGameState();
+        generateMoveEvalOrder();//may be unnecessary
     }
 
     public void calculatePieceLocations() {
@@ -1060,6 +1063,73 @@ public class Position {
         if (pieceCount > 3)return Type.midGame;
         return Type.endGame;
     }
+    public void generateMoveEvalOrder() {
+        for (int i=0;i<indexOfFirstEmptyMove;i++) {
+            legalMovePriorities[i] = getMovePriority(legalMoves[i]);
+        }
+        sortMoves();
+    }
+
+    private int getMovePriority(int legalMove) {//priority of 1 is an estimated 100 centipawn gain, - 100 cp loss, etc
+        int movePriority = 0;
+
+        int fromSquare = Move.getFromSquareFromMove(legalMove);
+        int movingPiece = squareCentricPos[fromSquare]%8;//take mod 8 to make pieces Colorless
+        int capturedPiece = Move.getCapturedPieceFromMove(legalMove)%8;
+        long enemyPawnAttacks = whiteToMove ? blackAttacksArray[Type.Pawn] : whiteAttacksArray[Type.Pawn];
+
+        if (capturedPiece != 0)movePriority = 2 * capturedPiece - movingPiece;//prioritize capturing low value with high value
+
+        long toSquareBB = 1L<<Move.getToSquareFromMove(legalMove);
+        if ((toSquareBB | enemyPawnAttacks) == enemyPawnAttacks)movePriority -= movingPiece;//devalue moving to enemy pawn attacking squares
+
+        byte moveType = Move.getMoveTypeFromMove(legalMove);
+        if (moveType == Type.pawnPromotesToQ) movePriority+=9;//prioritize pawn promoting to queen
+        else if (moveType > 4) movePriority++;//other pawn promotion that isn't a queen
+
+
+        return movePriority;
+    }
+    private void sortMoves() {
+        //using a custom sorting algorithm because 1: I only want to sort one part of the whole array and
+        //2: I want to swap the positions of elements in both legalMovePriorities and legalMoves at the same time
+
+        for (int i= indexOfFirstEmptyMove/2 - 1; i>=0; i--) {
+            heapify(legalMovePriorities, indexOfFirstEmptyMove, i);
+        }
+
+        for (int i= indexOfFirstEmptyMove-1; i >0; i--) {
+            swapMoves(i,0);
+
+            heapify(legalMovePriorities, i, 0);
+        }
+    }
+    private void heapify(int arr[], int n, int i) {
+        int largest = i;
+        int l = 2 * i + 1;
+        int r = 2 * i + 2;
+
+        if (l < n && arr[l] > arr[largest])
+            largest = l;
+
+        if (r < n && arr[r] > arr[largest])
+            largest = r;
+
+        if (largest != i) {
+            swapMoves(i,largest);
+
+            heapify(arr, n, largest);
+        }
+    }
+    private void swapMoves(int fromIndex, int toIndex) {
+        legalMoves[fromIndex] = legalMoves[fromIndex] ^ legalMoves[toIndex];
+        legalMoves[toIndex] = legalMoves[fromIndex] ^ legalMoves[toIndex];
+        legalMoves[fromIndex] = legalMoves[fromIndex] ^ legalMoves[toIndex];
+
+        legalMovePriorities[fromIndex] = legalMovePriorities[fromIndex] ^ legalMovePriorities[toIndex];
+        legalMovePriorities[toIndex] = legalMovePriorities[fromIndex] ^ legalMovePriorities[toIndex];
+        legalMovePriorities[fromIndex] = legalMovePriorities[fromIndex] ^ legalMovePriorities[toIndex];
+    }
 
     private void makeSquareAttackCapturesOnly() {
 
@@ -1203,7 +1273,7 @@ public class Position {
         return tempRAY;
     }
 
-    public void addMovesToMoveList(byte moveType, byte fromSquare, long toSquareBB) {//TODO: can make even faster
+    public void addMovesToMoveList(byte moveType, byte fromSquare, long toSquareBB) {
         while (toSquareBB != 0) {
             byte tempToSquare= (byte)Long.numberOfTrailingZeros(toSquareBB);
             int newMove = Move.makeMoveFromBytes(moveType,fromSquare,tempToSquare,squareCentricPos[tempToSquare]);

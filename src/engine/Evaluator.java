@@ -31,8 +31,8 @@ while (!exit) {
             return quiescenceEvaluation(pos, alpha, beta);
         }
 
-        for (int i=0;i< pos.indexOfFirstEmptyMove;i++) {
-            int moveToMake = pos.legalMoves[i];
+        for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
+            int moveToMake = pos.legalMoves[i];//could cause huge bugs if a negative number, not sure
 
             pos.makeMove(moveToMake);
             int eval = -evaluatePosition(pos,depth-1,-beta,-alpha);
@@ -50,8 +50,8 @@ while (!exit) {
         if (standingPat >= beta) return beta;
         alpha = Math.max(alpha, standingPat);
 
-        for (int i=0;i<pos.indexOfFirstEmptyMove;i++) {
-            int moveEvaluating = pos.legalMoves[i];
+        for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
+            int moveEvaluating = pos.legalMoves[i];//could cause huge bugs if a negative number
 
             if (Move.getCapturedPieceFromMove(moveEvaluating) != Type.Empty) {//only look deeper for captures
                 pos.makeMoveAndOnlyFindCaptures(moveEvaluating);
@@ -72,8 +72,8 @@ while (!exit) {
         int bestEval = -evaluatePosition(pos, depth, alpha, beta);
         pos.unmakeMove(bestMove);
 
-        for (int i=1;i<pos.indexOfFirstEmptyMove;i++) {
-            int moveToMake = pos.legalMoves[i];
+        for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
+            int moveToMake = pos.legalMoves[i];//could cause huge bugs if a negative number
 
             pos.makeMove(moveToMake);
             int eval = -evaluatePosition(pos, depth, alpha, beta);
