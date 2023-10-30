@@ -11,12 +11,6 @@ public class Move {
     private static final int capturedPieceMask=0x000000FF;
     public static final int fromSquareToSquareMask = 0x00FFFF00;
 
-    public void printMove() {
-        System.out.println("moveType- "+moveType);
-        System.out.println("fromSquare- "+fromSquare);
-        System.out.println("toSquare- "+toSquare);
-        System.out.println("CapturedPiece- "+capturedPiece);
-    }
     public static void printMoveInStandardNotation(int move) {
         byte fromSquare = getFromSquareFromMove(move);
         byte toSquare = getToSquareFromMove(move);
@@ -27,36 +21,20 @@ public class Move {
     public static String giveSquareAsStringFromByte(byte square) {
         String rank =""+(1+(square/8));
         String file = switch (square%8) {
-            case 0-> {
-                yield "a";
-            }
-            case 1-> {
-                yield "b";
-            }
-            case 2-> {
-                yield "c";
-            }
-            case 3-> {
-                yield "d";
-            }
-            case 4-> {
-                yield "e";
-            }
-            case 5-> {
-                yield "f";
-            }
-            case 6-> {
-                yield "g";
-            }
-            case 7-> {
-                yield "h";
-            }
+            case 0-> "a";
+            case 1-> "b";
+            case 2-> "c";
+            case 3-> "d";
+            case 4-> "e";
+            case 5-> "f";
+            case 6-> "g";
+            case 7-> "h";
             default -> "error";
         };
 
         return file+rank;
     }
-    private byte giveSquareAsByteFromString(String s) {
+    private static byte giveSquareAsByteFromString(String s) {
         String file = s.substring(0,1);
         String rank = s.substring(1,2);
 
@@ -90,8 +68,5 @@ public class Move {
     }
     public static int makeMoveFromBytes(byte moveType, byte fromSquare, byte toSquare, byte capturedPiece) {
         return moveType<<24 | fromSquare<<16 | toSquare<<8 | capturedPiece;
-    }
-    public static int getMoveFromMovePriority(long complexMove) {
-        return (int) ((complexMove<<32)>>>32);
     }
 }

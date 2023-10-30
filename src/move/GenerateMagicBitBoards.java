@@ -1,7 +1,5 @@
 package move;
 
-import position.Constants;
-
 public class GenerateMagicBitBoards {
 
     public static void makeBitboardDatabase() {
@@ -53,6 +51,7 @@ public class GenerateMagicBitBoards {
         }
     }
 
+    //for finding magic bitboards, I have them saved in another class, so I don't have to generate them at runtime
     public static void findMagicBitboardForBishop(int bishopSquare, int bitsRemaining) {
 
         long bishopMask = getMaskForBishop(bishopSquare);
@@ -85,8 +84,6 @@ public class GenerateMagicBitBoards {
     public static void findMagicBitboardForRook(int rookSquare, int bitsRemaining) {
         long rookMask = getMaskForRook(rookSquare);
         int maxBlockerCombinations = 1<<Long.bitCount(rookMask);
-        long maxBlockerComboNumberFound = 0;
-
 
         boolean magicBitboardDoesntWork = true;
         while (magicBitboardDoesntWork) {
@@ -153,19 +150,4 @@ public class GenerateMagicBitBoards {
         return maskForRook[startingSquare];
     }
 
-    //for finding magic bitboards, I have them saved in another class, so I don't have to generate them at runtime
-    public static void printMagicBitboardsForBishopsThenRooks() {//used for plain magic bitboards, not for fancy
-        System.out.println("Bishop Magics:");
-        for (int square=0;square<64;square++) {
-            findMagicBitboardForBishop(square,9);
-        }
-        System.out.println("Rook Magics:");
-        for (int square=0;square<64;square++) {
-            findMagicBitboardForRook(square,12);
-        }
-    }
-
-    private static long toBitboard(int square) {
-        return 1L<<square;
-    }
 }
