@@ -1,10 +1,6 @@
 package move;
 
 public class Move {
-    public byte moveType;
-    public byte fromSquare;
-    public byte toSquare;
-    public byte capturedPiece;
     //private static final int moveTypeMask  = 0xFF000000;  no need to mask since the bits are deleted on right shift
     private static final int fromSquareMask  = 0x00FF0000;
     private static final int toSquareMask    = 0x0000FF00;
