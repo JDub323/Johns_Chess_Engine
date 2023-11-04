@@ -32,6 +32,7 @@ public class Type {
     public static final byte pawnPromotesToN=5;
     public static final byte pawnPromotesToB=6;
     public static final byte pawnPromotesToR=7;
+    public static final byte illegalMove = 0;
 
     //possible states the game could be in
     public static final byte midGame=0;
