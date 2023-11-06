@@ -5,7 +5,7 @@ import move.PieceAttack;
 import java.util.Stack;
 
 
-public class Position {
+public class Position {//TODO: get rid of unnecessary methods and put them in another class
 
     //Position representation variables
     public long[] PieceArray = new long[15];
@@ -149,6 +149,7 @@ public class Position {
         hundredHalfmoveTimer= Integer.parseInt(moveClocks.substring(0,1));
 
         calculatePreCalculatedData();
+        calculateLegalMoves();
     }
     public Position(long[] PieceArray, byte[] squareCentricPos, boolean whiteToMove) {
         System.arraycopy(squareCentricPos, 0, this.squareCentricPos, 0, 64);
@@ -162,10 +163,6 @@ public class Position {
     public void makeMove(int move) {
         quietlyMakeMove(move);
         calculatePreCalculatedData();
-    }
-    public void makeMoveAndOnlyFindCaptures(int move) {
-        quietlyMakeMove(move);
-        calculateCapturingMovesOnly();
     }
     private void quietlyMakeMove(int move) {//TODO: make only one switch case, not two
         PreviousMadeMoves.push(move);
@@ -741,26 +738,20 @@ public class Position {
         legalMoves= PreviousMovelists.pop();
         indexOfFirstEmptyMove= PreviousIndexOfFirstEmptyMove.pop();
     }
-    public void calculatePreCalculatedData() {
+    public void calculatePreCalculatedData() {//finds piece locations, piece attacks, pins, and checks
         calculatePieceLocations();
         calculateSquareAttacks();
         calculateInCheck();
         calculateCheckResolveRay();
         calculatePinRay();
-        findLegalMoves();
-        gameState = calculateGameState();
-        generateMoveEvalOrder();
     }
-    public void calculateCapturingMovesOnly() {
-        calculatePieceLocations();
-        calculateSquareAttacks();
-        calculateInCheck();
-        calculateCheckResolveRay();
-        calculatePinRay();
-        makeSquareAttackCapturesOnly();
+    public void calculateLegalMoves() {//ALSO FINDS THE GAME STATE
         findLegalMoves();
         gameState = calculateGameState();
-        generateMoveEvalOrder();//may be unnecessary
+    }
+    public void calculateCapturingMovesOnly() {//ALSO FINDS THE GAME STATE
+        findLegalCapturingMoves();
+        gameState = calculateGameState();
     }
 
     public void calculatePieceLocations() {
@@ -911,6 +902,8 @@ public class Position {
         if (whiteToMove) {
             long kingLocationBB = PieceArray[Type.King];
             int kingLocation = Long.numberOfTrailingZeros(kingLocationBB);
+            assert (kingLocation < 64);
+
             long rookPinners = PieceArray[Type.Black | Type.Queen] | PieceArray[Type.Black | Type.Rook];
             long bishopPinners = PieceArray[Type.Black | Type.Queen] | PieceArray[Type.Black | Type.Bishop];
 
@@ -1048,7 +1041,53 @@ public class Position {
             generateKingMoves(pieceSquareList[colorToFindMovesFor | Type.King][i]);
         }
     }
-    public byte calculateGameState() {
+    public void findLegalCapturingMoves() {
+        int colorToFindMovesFor;
+        long notFriendlyPieces;
+        long enemyPieces;
+
+        if (whiteToMove) {
+            colorToFindMovesFor=Type.White;
+            notFriendlyPieces=~whitePieces;
+            enemyPieces = blackPieces;
+        }
+        else {
+            colorToFindMovesFor=Type.Black;
+            notFriendlyPieces=~blackPieces;
+            enemyPieces = whitePieces;
+        }
+
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Pawn];i++) {
+            squareAttacksArray[pieceSquareList[colorToFindMovesFor | Type.Pawn][i]] &= enemyPieces;
+            generatePawnCapturesOnly(pieceSquareList[colorToFindMovesFor | Type.Pawn][i]);
+        }
+
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Knight];i++) {
+            squareAttacksArray[pieceSquareList[colorToFindMovesFor | Type.Knight][i]] &= enemyPieces;
+            generateKnightMoves(pieceSquareList[colorToFindMovesFor | Type.Knight][i], notFriendlyPieces);
+        }
+
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Bishop];i++) {
+            squareAttacksArray[pieceSquareList[colorToFindMovesFor | Type.Bishop][i]] &= enemyPieces;
+            generateBishopMoves(pieceSquareList[colorToFindMovesFor | Type.Bishop][i], notFriendlyPieces);
+        }
+
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Rook];i++) {
+            squareAttacksArray[pieceSquareList[colorToFindMovesFor | Type.Rook][i]] &= enemyPieces;
+            generateRookMoves(pieceSquareList[colorToFindMovesFor | Type.Rook][i], notFriendlyPieces);
+        }
+
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.Queen];i++) {
+            squareAttacksArray[pieceSquareList[colorToFindMovesFor | Type.Queen][i]] &= enemyPieces;
+            generateQueenMoves(pieceSquareList[colorToFindMovesFor | Type.Queen][i], notFriendlyPieces);
+        }
+
+        for (int i=0;i<numPieces[colorToFindMovesFor | Type.King];i++) {
+            squareAttacksArray[pieceSquareList[colorToFindMovesFor | Type.King][i]] &= enemyPieces;
+            generateKingCapturesOnly(pieceSquareList[colorToFindMovesFor | Type.King][i]);
+        }
+    }
+    public byte calculateGameState() {//TODO: add 50 move draw, draw by repitition, draw by insuffecient material
         if (indexOfFirstEmptyMove==0) {
             if (inCheck) {
                 if (whiteToMove)return Type.whiteIsCheckmated;
@@ -1063,7 +1102,7 @@ public class Position {
         if (pieceCount > 3)return Type.midGame;
         return Type.endGame;
     }
-    public void generateMoveEvalOrder() {
+    public void optimizeMoveOrder() {
         for (int i=0;i<indexOfFirstEmptyMove;i++) {
             legalMovePriorities[i] = getMovePriority(legalMoves[i]);
         }
@@ -1091,6 +1130,7 @@ public class Position {
         return movePriority;
     }
     private void sortMoves() {
+        //could be causing my bugs, not sure
         //using a custom sorting algorithm because 1: I only want to sort one part of the whole array and
         //2: I want to swap the positions of elements in both legalMovePriorities and legalMoves at the same time
 
@@ -1131,47 +1171,6 @@ public class Position {
         legalMovePriorities[fromIndex] = legalMovePriorities[fromIndex] ^ legalMovePriorities[toIndex];
     }
 
-    private void makeSquareAttackCapturesOnly() {
-
-        for (int i=0;i<numPieces[Type.White | Type.Pawn];i++) {
-            squareAttacksArray[pieceSquareList[Type.White | Type.Pawn][i]] &= blackPieces;
-        }
-        for (int i=0;i<numPieces[Type.White | Type.Knight];i++) {
-            squareAttacksArray[pieceSquareList[Type.White | Type.Knight][i]] &= blackPieces;
-        }
-        for (int i=0;i<numPieces[Type.White | Type.Bishop];i++) {
-            squareAttacksArray[pieceSquareList[Type.White | Type.Bishop][i]] &= blackPieces;
-        }
-        for (int i=0;i<numPieces[Type.White | Type.Rook];i++) {
-            squareAttacksArray[pieceSquareList[Type.White | Type.Rook][i]] &= blackPieces;
-        }
-        for (int i=0;i<numPieces[Type.White | Type.Queen];i++) {
-            squareAttacksArray[pieceSquareList[Type.White | Type.Queen][i]] &= blackPieces;
-        }
-        for (int i=0;i<numPieces[Type.White | Type.King];i++) {
-            squareAttacksArray[pieceSquareList[Type.White | Type.King][i]] &= blackPieces;
-        }
-
-        for (int i=0;i<numPieces[Type.Black | Type.Pawn];i++) {
-            squareAttacksArray[pieceSquareList[Type.Black | Type.Pawn][i]] &= whitePieces;
-        }
-        for (int i=0;i<numPieces[Type.Black | Type.Knight];i++) {
-            squareAttacksArray[pieceSquareList[Type.Black | Type.Knight][i]] &= whitePieces;
-        }
-        for (int i=0;i<numPieces[Type.Black | Type.Bishop];i++) {
-            squareAttacksArray[pieceSquareList[Type.Black | Type.Bishop][i]] &= whitePieces;
-        }
-        for (int i=0;i<numPieces[Type.Black | Type.Rook];i++) {
-            squareAttacksArray[pieceSquareList[Type.Black | Type.Rook][i]] &= whitePieces;
-        }
-        for (int i=0;i<numPieces[Type.Black | Type.Queen];i++) {
-            squareAttacksArray[pieceSquareList[Type.Black | Type.Queen][i]] &= whitePieces;
-        }
-        for (int i=0;i<numPieces[Type.Black | Type.King];i++) {
-            squareAttacksArray[pieceSquareList[Type.Black | Type.King][i]] &= whitePieces;
-        }
-    }
-
     public long findCheckResolveRay(long kingLocation) {//TODO: MAKE FASTER
         long tickerSquareBB;
         long tempRAY=0;
@@ -1191,7 +1190,6 @@ public class Position {
             long pawnCheck = PieceAttack.generateBlackPawnAttacks(kingLocation) & PieceArray[enemyColor | Type.Pawn];
             if (pawnCheck !=0)return pawnCheck;
         }
-
 
         long knightCheck = PieceAttack.generateKnightAttacks(kingLocation) & PieceArray[enemyColor | Type.Knight];
         if (knightCheck !=0)return knightCheck;
@@ -1316,7 +1314,7 @@ public class Position {
         return -1;
     }
 
-    public void generatePawnMoves(byte fromSquare) {
+    public void generatePawnMoves(byte fromSquare) {//TODO: refactor this to make more optimal
         long[] possibleMoves = new long[8];
         if (whiteToMove) {
             long fromSquareBB= toBitboard(fromSquare);
@@ -1401,6 +1399,69 @@ public class Position {
         addMovesToMoveList(Type.pawnPromotesToB,fromSquare,possibleMoves[Type.pawnPromotesToB]);
         addMovesToMoveList(Type.pawnPromotesToR,fromSquare,possibleMoves[Type.pawnPromotesToR]);
     }
+    private void generatePawnCapturesOnly(byte fromSquare) {//TODO: refactor this to make more optimal
+        long possibleMoves[] = new long[8];
+        if (whiteToMove) {
+            long fromSquareBB= toBitboard(fromSquare);
+            long attackingSquares= PieceAttack.lookUpWhitePawnAttacks(fromSquare);
+
+            if (fromSquare/8==6){//on the seventh rank
+                long tempToSquareBB = attackingSquares & blackPieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &= pinRay[indexOfPin];//if on the pin ray
+                tempToSquareBB &= checkResolveRay;
+
+                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
+            }
+            else {//not on the seventh rank, white to move
+                possibleMoves[Type.normalMove]|= attackingSquares & blackPieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
+                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
+                }
+
+                possibleMoves[Type.normalMove] &= checkResolveRay;
+                possibleMoves[Type.doublePawnMove] &= checkResolveRay;
+
+                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<40;//en passant
+                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
+                //check to see if enPassant could be possible before doing slow pin check
+                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
+            }
+        }
+
+        else {
+            long fromSquareBB= toBitboard(fromSquare);
+            long attackingSquares= PieceAttack.lookUpBlackPawnAttacks(fromSquare);
+
+            if (fromSquare/8==1){//on the second rank, black to move
+                long tempToSquareBB = attackingSquares & whitePieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &= pinRay[indexOfPin];//if on the pin ray
+                tempToSquareBB &= checkResolveRay;
+
+                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
+            }
+            else {//not on the second rank, black to move
+                possibleMoves[Type.normalMove]|= attackingSquares & whitePieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
+                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
+                }
+
+                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<16;//en passant
+                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
+                //check to see if enPassant could be possible before doing slow pin check
+                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
+            }
+        }
+    }
     public void generateKnightMoves(byte fromSquare, long notFriendlyPiecesBB) {
         long possibleMoves = squareAttacksArray[fromSquare];
 
@@ -1437,7 +1498,6 @@ public class Position {
         addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
     }
     public void generateKingMoves(byte fromSquare) {
-
         long possibleMoves=PieceAttack.lookUpKingAttacks(fromSquare);
         long possibleCastles=0;
 
@@ -1469,6 +1529,18 @@ public class Position {
 
         addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
         addMovesToMoveList(Type.castles,fromSquare,possibleCastles);
+    }
+    public void generateKingCapturesOnly(byte fromSquare) {
+        long possibleMoves = squareAttacksArray[fromSquare];
+
+        if (whiteToMove) {
+            possibleMoves&= ~(whitePieces | blackAttacks);//can't move into check
+        }
+        else {
+            possibleMoves&= ~(blackPieces | whiteAttacks);//can't move into check
+        }
+
+        addMovesToMoveList(Type.normalMove, fromSquare, possibleMoves);
     }
 
     public boolean onPinRay(long squareBB) {

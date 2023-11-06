@@ -8,11 +8,14 @@ public class Move {
     public static final int fromSquareToSquareMask = 0x00FFFF00;
 
     public static void printMoveInStandardNotation(int move) {
+        System.out.print(getStringFromMove(move));
+    }
+    public static String getStringFromMove(int move) {
         byte fromSquare = getFromSquareFromMove(move);
         byte toSquare = getToSquareFromMove(move);
         byte capturedPiece = getCapturedPieceFromMove(move);
         byte moveType = getMoveTypeFromMove(move);
-        System.out.print(giveSquareAsStringFromByte(fromSquare)+ giveSquareAsStringFromByte(toSquare)+" capt-"+capturedPiece+" mt-"+moveType);
+        return giveSquareAsStringFromByte(fromSquare) + giveSquareAsStringFromByte(toSquare)+" capt-"+capturedPiece+" mt-"+moveType;
     }
     public static String giveSquareAsStringFromByte(byte square) {
         String rank =""+(1+(square/8));

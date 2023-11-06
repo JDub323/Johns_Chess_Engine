@@ -25,10 +25,10 @@ public class StaticEval {
                 return endGameEvaluationOf(pos);
             }
             case Type.blackIsCheckmated -> {
-                return Integer.MIN_VALUE;
+                return Integer.MIN_VALUE+1;
             }
             case Type.whiteIsCheckmated -> {
-                return Integer.MAX_VALUE;
+                return Integer.MAX_VALUE-1;
             }
             default -> {//Type.gameIsADraw
                 return 0;

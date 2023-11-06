@@ -118,6 +118,7 @@ public class Graphical extends JPanel{
 
         if (moveListContainsFromSquareToSquare && !stopAllMoves) {
             CurrentPosition.position.makeMove(CurrentPosition.position.legalMoves[indexOfMoveFound]);
+            CurrentPosition.position.calculateLegalMoves();
             CurrentPosition.updateMoveMakers();
             System.arraycopy(CurrentPosition.position.squareCentricPos,0,graphicSquareCentricPos,0,64);
             pickedUpPiece= Type.Empty;

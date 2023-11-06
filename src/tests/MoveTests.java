@@ -99,6 +99,7 @@ public class MoveTests {
         for (int i=0;i<pos.indexOfFirstEmptyMove;i++) {
 
             pos.makeMove(pos.legalMoves[i]);
+            pos.calculateLegalMoves();
             numPositions += testNumPositions(pos,depth-1);
             pos.unmakeMove( pos.PreviousMadeMoves.pop() );
         }
@@ -112,6 +113,7 @@ public class MoveTests {
             int testingMove = pos.legalMoves[i];
             Move.printMoveInStandardNotation(testingMove);
             pos.makeMove(testingMove);
+            pos.calculateLegalMoves();
             int nodes = MoveTests.testNumPositions(pos, depth-1);
             System.out.println("----"+nodes);
             workingTotal+=nodes;
@@ -127,6 +129,7 @@ public class MoveTests {
     public static void testTestPositionAndShowNodes(String fen, int depth, int moveToMake) {
         Position pos = new Position (fen);
         pos.makeMove(moveToMake);
+        pos.calculateLegalMoves();
         testMovesAndShowNodes(pos,depth);
         System.out.print("New Fen: ");
         pos.printFen();

@@ -4,6 +4,7 @@ import gui.FrameHolder;
 import gui.Graphical;
 import position.CurrentPosition;
 import position.Position;
+import position.Type;
 
 public class MoveMaker implements Runnable{
     Position pos;
@@ -28,7 +29,10 @@ public class MoveMaker implements Runnable{
     }
 
     private void makeBestMove(int move) {
-        pos.makeMove(move);
+        if (move != Type.illegalMove) {
+            pos.makeMove(move);
+            pos.calculateLegalMoves();
+        }
     }
 
     public boolean isPlaying() {
