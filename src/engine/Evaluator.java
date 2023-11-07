@@ -50,7 +50,6 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             pos.unmakeMove(moveToMake);
 
             if (eval > bestEval){
-                System.out.println("Move "+ Move.getStringFromMove(moveToMake) +" gives a new best estimated eval of "+eval);
                 floatingBestMove = moveToMake;
                 bestEval = eval;
             }
