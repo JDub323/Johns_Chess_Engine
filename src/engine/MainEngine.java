@@ -1,14 +1,9 @@
 package engine;
 
 import move.GenerateMagicBitBoards;
-import move.MagicBitboards;
 import move.PieceAttack;
 import position.CurrentPosition;
 import tests.EvaluationTests;
-import tests.MoveTests;
-import move.Move;
-import position.Type;
-import tests.StaticEvalTests;
 
 
 public class MainEngine {
@@ -19,8 +14,8 @@ public class MainEngine {
         gui.FrameHolder.makeFrame();
         startPosition();
         //start move search
-        //CurrentPosition.updateMoveMakers();
-        EvaluationTests.testMidGameTestPositions(4);
+        CurrentPosition.updateMoveMakers();
+
 
 
         //MoveTests.testAllTestPositions();
@@ -32,7 +27,7 @@ public class MainEngine {
 
     public static void startPosition() {
         String startingPosition = "r1bq1br1/ppppk1p1/5p2/4pQp1/3P4/4K3/PPP1PPPP/RN3B1R w - - 0 5";
-        CurrentPosition.InitializePosition(startingPosition,false,true, 1000);
+        CurrentPosition.InitializePosition(startingPosition,true,true, 1000);
         //Normal starting position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
     }
 }

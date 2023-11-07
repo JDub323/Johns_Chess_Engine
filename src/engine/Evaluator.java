@@ -1,6 +1,7 @@
 package engine;
 
 import eval.StaticEval;
+import move.Move;
 import position.CurrentPosition;
 import position.Position;
 import position.Type;
@@ -33,7 +34,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
     //takes input with legal moves, in order
     private int searchRoot(Position pos, int depth, int alpha, int beta) {
         //root node, returns a move instead of an evaluation, prints the evaluation
-        bestEval = Integer.MIN_VALUE+1;//careful about overflow
+        bestEval = Integer.MIN_VALUE;//careful about overflow
 
         int floatingBestMove = Type.illegalMove;
 
@@ -45,25 +46,23 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             int moveToMake = pos.legalMoves[i];
 
             pos.makeMove(moveToMake);
-            int eval = -evaluatePosition(pos, depth, alpha, beta);
+            int eval = -evaluatePosition(pos, depth, -beta, -alpha);
             pos.unmakeMove(moveToMake);
 
             if (eval > bestEval){
+                System.out.println("Move "+ Move.getStringFromMove(moveToMake) +" gives a new best estimated eval of "+eval);
                 floatingBestMove = moveToMake;
                 bestEval = eval;
             }
             alpha = Math.max(alpha,eval);
         }
-        //System.out.println("Best eval: "+bestEval);
         return floatingBestMove;
     }
-
 
     //takes input of position without legal moves or moves ordered
     public int evaluatePosition(Position pos, int depth, int alpha, int beta) {
         if (depth==0) {
-            //return quiescenceEvaluation(pos,alpha,beta);
-            return StaticEval.evaluate(pos);
+            return quiescenceEvaluation(pos,alpha,beta);
         }
 
         pos.calculateLegalMoves();
@@ -84,7 +83,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             if (eval >= beta) {
                 return beta;
             }
-            alpha = Math.max(alpha,eval);
+            alpha = Math.max(alpha, eval);
         }
         return alpha;
     }
@@ -108,80 +107,5 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             alpha = Math.max(alpha, eval);
         }
         return alpha;
-    }
-
-    public int evaluatePositionWithoutAlphaBeta(Position pos, int depth, int alpha, int beta) {
-        if (depth==0) {
-            //return quiescenceEvaluationWithoutAlphaBeta(pos,alpha,beta);
-            return StaticEval.evaluate(pos);
-        }
-
-        pos.calculateLegalMoves();
-
-        if (pos.gameState > Type.endGame) {//game has ended
-            if (pos.gameState == Type.gameIsADraw)return 0;
-            return Integer.MIN_VALUE+1;//always the worst possible position for the player to move in checkmate, so always the worst value
-        }//be careful about integer overflow errors with this. add one to be safe
-
-        //pos.optimizeMoveOrder();
-        int bestEval= Integer.MIN_VALUE;
-        for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
-            int moveToMake = pos.legalMoves[i];
-
-            pos.makeMove(moveToMake);
-            int eval = -evaluatePositionWithoutAlphaBeta(pos,depth-1,-beta,-alpha);
-            pos.unmakeMove(moveToMake);
-
-            bestEval = Math.max(bestEval,eval);
-        }
-        return bestEval;
-    }
-    public int quiescenceEvaluationWithoutAlphaBeta(Position pos, int alpha, int beta) {
-        int standingPat = StaticEval.evaluate(pos);
-
-
-        pos.calculateCapturingMovesOnly();
-        //pos.optimizeMoveOrder();
-        for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {//keep recursion going until no more captures
-            int moveEvaluating = pos.legalMoves[i];
-
-            pos.makeMove(moveEvaluating);
-            int eval = -quiescenceEvaluationWithoutAlphaBeta(pos, -beta, -alpha);
-            pos.unmakeMove(moveEvaluating);
-
-            standingPat = Math.max(standingPat, eval);
-        }
-        return standingPat;
-    }
-    private int searchRootWithoutAlphaBeta(Position pos, int depth, int alpha, int beta) {
-        bestEval = Integer.MIN_VALUE+1;//careful about overflow
-
-        int floatingBestMove = Type.illegalMove;
-
-        if (pos.gameState > Type.endGame) {//game is over, so return an empty move
-            return floatingBestMove;
-        }
-
-        for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
-            int moveToMake = pos.legalMoves[i];
-
-            pos.makeMove(moveToMake);
-            int eval = -evaluatePositionWithoutAlphaBeta(pos, depth, -beta, -alpha);
-            pos.unmakeMove(moveToMake);
-
-            if (eval > bestEval){
-                floatingBestMove = moveToMake;
-                bestEval = eval;
-            }
-            alpha = Math.max(alpha,eval);
-        }
-        //System.out.println("Best eval: "+bestEval);
-        return floatingBestMove;
-    }
-    public void findBestMoveWithoutAlphaBeta(Position pos, int depth) {
-        int alpha = Integer.MIN_VALUE+1;
-        int beta = Integer.MAX_VALUE-1;
-
-        bestMove = searchRootWithoutAlphaBeta(pos,depth,alpha,beta);
     }
 }

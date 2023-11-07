@@ -16,24 +16,9 @@ public class StaticEval {
     static final int endGameRookValue = 550;
     static final int endGameQueenValue = 1050;
 
-    public static int evaluate(Position pos) {
-        switch (pos.gameState) {
-            case Type.midGame -> {
-                return midGameEvaluationOf(pos);
-            }
-            case Type.endGame -> {
-                return endGameEvaluationOf(pos);
-            }
-            case Type.blackIsCheckmated -> {
-                return Integer.MIN_VALUE+1;
-            }
-            case Type.whiteIsCheckmated -> {
-                return Integer.MAX_VALUE-1;
-            }
-            default -> {//Type.gameIsADraw
-                return 0;
-            }
-        }
+    public static int evaluate(Position pos) {//don't check for checkmate in static eval, just hope previous positions found it
+        if (pos.gameState == Type.midGame)return midGameEvaluationOf(pos);
+        else return endGameEvaluationOf(pos);
     }
     private static int midGameEvaluationOf(Position pos) {//return a high value if good for player to move, low value if not
         int eval = midGameKingSafety(pos);

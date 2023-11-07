@@ -39,7 +39,6 @@ public class EvaluationTests {
     public static void testMidGameTestPositions(int depth) {
         for (int i = 0; i< Array.getLength(MGTestPositions); i++) {
             testTestPosition(MGTestPositions[i], depth, i+1);
-            testTestPositionWithoutAlphaBeta(MGTestPositions[i], depth, i+1);
             System.out.println("Stockfish scores: "+ MGStockfishEval[i]+" after move: "+ MGStockfishBestMove[i]+"\n");
         }
     }
@@ -61,14 +60,14 @@ public class EvaluationTests {
 
         System.out.println("Position "+positionNumber+" scores: "+eval+" after move: "+ Move.getStringFromMove(bestMove) + " with alpha beta");
     }
-    public static void testTestPositionWithoutAlphaBeta(String fen, int depth, int positionNumber) {
-        Position pos = new Position(fen);
 
-        evaluator.findBestMoveWithoutAlphaBeta(pos,depth);
+    public static void testEvalOfMove(String positionFen, String move, int depth) {
+        Position pos = new Position(positionFen);
 
-        int bestMove = evaluator.bestMove;
-        int eval = evaluator.bestEval;
+        int moveToMake = Move.makeMoveFromString(move, (byte) 0, (byte) 0);
+        pos.makeMove(moveToMake);
 
-        System.out.println("Position "+positionNumber+" scores: "+eval+" after move: "+ Move.getStringFromMove(bestMove)+" Without Alpha Beta, which shouldn't change the eval");
+        int eval = -evaluator.evaluatePosition(pos,depth,Integer.MIN_VALUE+1,Integer.MAX_VALUE-1);
+        System.out.print("Eval with pruning of "+move+" is: "+eval);
     }
 }

@@ -731,12 +731,12 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         }
 
         whiteToMove= !whiteToMove;
-        gameState = calculateGameState();
         enPassantTargetFiles= PreviousEnPassantTargetFiles.pop();
         castlingRights= PreviousCastlingRights.pop();
         hundredHalfmoveTimer= PreviousHalfMoveTimers.pop();
         legalMoves= PreviousMovelists.pop();
         indexOfFirstEmptyMove= PreviousIndexOfFirstEmptyMove.pop();
+        gameState = calculateGameState();
     }
     public void calculatePreCalculatedData() {//finds piece locations, piece attacks, pins, and checks
         calculatePieceLocations();

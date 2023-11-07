@@ -15,7 +15,7 @@ public class Move {
         byte toSquare = getToSquareFromMove(move);
         byte capturedPiece = getCapturedPieceFromMove(move);
         byte moveType = getMoveTypeFromMove(move);
-        return giveSquareAsStringFromByte(fromSquare) + giveSquareAsStringFromByte(toSquare)+" capt-"+capturedPiece+" mt-"+moveType;
+        return giveSquareAsStringFromByte(fromSquare) + giveSquareAsStringFromByte(toSquare)+" c"+capturedPiece+" t"+moveType;
     }
     public static String giveSquareAsStringFromByte(byte square) {
         String rank =""+(1+(square/8));
@@ -66,6 +66,15 @@ public class Move {
         return (byte)(move & capturedPieceMask);
     }
     public static int makeMoveFromBytes(byte moveType, byte fromSquare, byte toSquare, byte capturedPiece) {
+        return moveType<<24 | fromSquare<<16 | toSquare<<8 | capturedPiece;
+    }
+    public static int makeMoveFromString(String fromSquareToSquareStr, byte moveType, byte capturedPiece) {
+        String fromSquareStr = fromSquareToSquareStr.substring(0,2);
+        String toSquareStr = fromSquareToSquareStr.substring(2,4);
+
+        byte fromSquare = giveSquareAsByteFromString(fromSquareStr);
+        byte toSquare = giveSquareAsByteFromString(toSquareStr);
+
         return moveType<<24 | fromSquare<<16 | toSquare<<8 | capturedPiece;
     }
 }
