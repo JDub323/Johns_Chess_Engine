@@ -16,6 +16,25 @@ public class StaticEval {
     static final int endGameRookValue = 550;
     static final int endGameQueenValue = 1050;
 
+    private static final boolean[][][][] gameIsDrawnByInsufficientMaterial = new boolean[3][3][3][3];//first is white knight, then white bishop, then black knight, then black bishop
+    static {
+        gameIsDrawnByInsufficientMaterial[0][0][0][0] = true;//no pieces
+        gameIsDrawnByInsufficientMaterial[1][0][0][0] = true;//only 1 piece total
+        gameIsDrawnByInsufficientMaterial[0][1][0][0] = true;
+        gameIsDrawnByInsufficientMaterial[0][0][1][0] = true;
+        gameIsDrawnByInsufficientMaterial[0][0][0][1] = true;
+        gameIsDrawnByInsufficientMaterial[1][0][1][0] = true;//2 pieces, opposite color
+        gameIsDrawnByInsufficientMaterial[1][0][0][1] = true;
+        gameIsDrawnByInsufficientMaterial[0][1][1][0] = true;
+        gameIsDrawnByInsufficientMaterial[0][1][0][1] = true;
+        gameIsDrawnByInsufficientMaterial[2][0][0][0] = true;//2 pieces, same color only draw with knights
+        gameIsDrawnByInsufficientMaterial[0][0][2][0] = true;
+    }
+
+    public static boolean gameIsDrawnByInsufficientMaterial(int numWhiteKnights, int numWhiteBishops, int numBlackKnights, int numBlackBishops) {
+        return gameIsDrawnByInsufficientMaterial[numWhiteKnights][numWhiteBishops][numBlackKnights][numBlackBishops];
+    }
+
     public static int evaluate(Position pos) {//don't check for checkmate in static eval, just hope previous positions found it
         if (pos.gameState == Type.midGame)return midGameEvaluationOf(pos);
         else return endGameEvaluationOf(pos);
