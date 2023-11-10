@@ -1,5 +1,6 @@
 package ChessUtilities;
 
+import move.Move;
 import position.Type;
 
 public class Util {
@@ -89,5 +90,12 @@ public class Util {
     }
 
     public static long toBitboard(int x) {return 1L<<x;}
+
+    public static void printMoveArray(int[] moveArray) {
+        for (int j : moveArray) {
+            System.out.print(Move.getStringFromMove(j) + " | ");
+        }
+        System.out.println();
+    }
 
 }
