@@ -1,8 +1,10 @@
 package position;
 
+import eval.StaticEval;
 import move.Move;
 import move.PieceAttack;
 import java.util.Stack;
+import ChessUtilities.Util;
 
 
 public class Position {//TODO: get rid of unnecessary methods and put them in another class
@@ -32,6 +34,7 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
     public byte[] numPieces = new byte[15];
     public byte[][] colorIndexBoard = new byte[2][64];//0 for white, 1 for black
     public byte gameState;
+    public long zobristKey;
 
     //additional useful variables in the position
     public Stack<Integer> PreviousMadeMoves = new Stack<>();
@@ -88,13 +91,13 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 tickerSquare+=Integer.parseInt(temp);
             }
             else {
-                PieceArray[getPieceFromString(temp)]+=toBitboard(tickerSquare);
+                PieceArray[Util.getPieceFromString(temp)]+=Util.toBitboard(tickerSquare);
                 tickerSquare++;
             }
         }
 
         for (int x=0;x<64;x++) {
-            byte pieceOnX = getPieceFromSquareWithBB(x,PieceArray);
+            byte pieceOnX = Util.getPieceFromSquareWithBB(x,PieceArray);
             squareCentricPos[x]=pieceOnX;
 
             if (pieceOnX != Type.Empty) {
@@ -169,7 +172,7 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         PreviousCastlingRights.push(castlingRights);
         PreviousEnPassantTargetFiles.push(enPassantTargetFiles);
         PreviousHalfMoveTimers.push(hundredHalfmoveTimer);
-        PreviousMovelists.push(cloneMoveArray(legalMoves, indexOfFirstEmptyMove));
+        PreviousMovelists.push(Util.cloneArray(legalMoves, indexOfFirstEmptyMove));
         PreviousIndexOfFirstEmptyMove.push(indexOfFirstEmptyMove);
 
         byte fromSquare = Move.getFromSquareFromMove(move);
@@ -302,8 +305,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
 
         switch (moveType) {
             case Type.normalMove -> {
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]=movingPiece;//updates redundant squareCentricPosition
@@ -326,8 +329,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 quietlyEnPassant(fromSquare, toSquare);
             }
             case Type.doublePawnMove -> {
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]=movingPiece;//updates redundant squareCentricPosition
@@ -392,8 +395,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                     colorPromoting= Type.Black;
                 }
 
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]= (byte)(colorPromoting | Type.Queen);//updates redundant squareCentricPosition
@@ -412,8 +415,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                     colorPromoting= Type.Black;
                 }
 
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]= (byte)(colorPromoting | Type.Knight);//updates redundant squareCentricPosition
@@ -432,8 +435,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                     colorPromoting= Type.Black;
                 }
 
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]= (byte)(colorPromoting | Type.Bishop);//updates redundant squareCentricPosition
@@ -452,8 +455,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                     colorPromoting= Type.Black;
                 }
 
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[fromSquare]= Type.Empty;//updates redundant squareCentricPosition
                 squareCentricPos[toSquare]= (byte)(colorPromoting | Type.Rook);//updates redundant squareCentricPosition
@@ -604,8 +607,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
 
         switch (moveType) {
             case Type.normalMove-> {
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[toSquare]= capturedPiece;//updates redundant squareCentricPosition
                 squareCentricPos[fromSquare]=movingPiece;//updates redundant squareCentricPosition
@@ -614,8 +617,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 PieceArray[capturedPiece]^=toSquareBB;
             }
             case Type.doublePawnMove -> {
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[toSquare]= Type.Empty;
                 squareCentricPos[fromSquare]=movingPiece;
@@ -623,7 +626,7 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 PieceArray[movingPiece]^=fromSquareBB|toSquareBB;
             }
             case Type.castles -> {
-                long toSquareBB=toBitboard(toSquare);
+                long toSquareBB=Util.toBitboard(toSquare);
 
                 if (toSquareBB==Constants.g1) {//white castles short
                     PieceArray[Type.White| Type.King]^= Constants.g1 | Constants.e1;
@@ -659,8 +662,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 }
             }
             case Type.enPassant -> {
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 int enPassantCapturedSquare=toSquare-8;
                 short colorNotMoving= Type.Black;
@@ -674,13 +677,13 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 squareCentricPos[enPassantCapturedSquare]= (byte)(colorNotMoving | Type.Pawn);
 
                 PieceArray[movingPiece]^=fromSquareBB|toSquareBB;
-                PieceArray[colorNotMoving | Type.Pawn]^=toBitboard(enPassantCapturedSquare);
+                PieceArray[colorNotMoving | Type.Pawn]^=Util.toBitboard(enPassantCapturedSquare);
             }
             case Type.pawnPromotesToQ -> {
                 short colorPromoting= toSquare/8==7 ? Type.White : Type.Black;
 
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[toSquare]= capturedPiece;//updates redundant squareCentricPosition
                 squareCentricPos[fromSquare]= (byte)(colorPromoting | Type.Pawn);//updates redundant squareCentricPosition
@@ -692,8 +695,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
             case Type.pawnPromotesToN -> {
                 short colorPromoting= toSquare/8==7 ? Type.White : Type.Black;
 
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[toSquare]= capturedPiece;//updates redundant squareCentricPosition
                 squareCentricPos[fromSquare]= (byte)(colorPromoting | Type.Pawn);//updates redundant squareCentricPosition
@@ -705,8 +708,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
             case Type.pawnPromotesToB -> {
                 short colorPromoting= toSquare/8==7 ? Type.White : Type.Black;
 
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[toSquare]= capturedPiece;//updates redundant squareCentricPosition
                 squareCentricPos[fromSquare]= (byte)(colorPromoting | Type.Pawn);//updates redundant squareCentricPosition
@@ -718,8 +721,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
             case Type.pawnPromotesToR -> {
                 short colorPromoting= toSquare/8==7 ? Type.White : Type.Black;
 
-                long fromSquareBB = toBitboard(fromSquare);
-                long toSquareBB = toBitboard(toSquare);
+                long fromSquareBB = Util.toBitboard(fromSquare);
+                long toSquareBB = Util.toBitboard(toSquare);
 
                 squareCentricPos[toSquare]= capturedPiece;//updates redundant squareCentricPosition
                 squareCentricPos[fromSquare]= (byte)(colorPromoting | Type.Pawn);//updates redundant squareCentricPosition
@@ -1087,19 +1090,29 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
             generateKingCapturesOnly(pieceSquareList[colorToFindMovesFor | Type.King][i]);
         }
     }
-    public byte calculateGameState() {//TODO: add 50 move draw, draw by repitition, draw by insuffecient material
+    public byte calculateGameState() {//TODO: add draw by repitition
         if (indexOfFirstEmptyMove==0) {
             if (inCheck) {
                 if (whiteToMove)return Type.whiteIsCheckmated;
                 return Type.blackIsCheckmated;
             }
-            return Type.gameIsADraw;
+            return Type.gameIsADraw;//stalemate
         }
 
-        //only check white's number of pieces for the switch to the endgame, can assume piece count is similiar for black
-        int pieceCount = numPieces[Type.Knight] + numPieces[Type.Bishop] + numPieces[Type.Rook] + numPieces[Type.Queen];
+        if (hundredHalfmoveTimer>=100)return Type.gameIsADraw;//fifty-move rule draw
+
+
+        int whitePieceCount = numPieces[Type.Knight] + numPieces[Type.Bishop] + numPieces[Type.Rook] + numPieces[Type.Queen];
+        int blackPieceCount = numPieces[Type.Black | Type.Knight] + numPieces[Type.Black | Type.Bishop] + numPieces[Type.Black | Type.Rook] + numPieces[Type.Black | Type.Queen];
         //if there are 3 or fewer pieces for each color, then it is the endGame
-        if (pieceCount > 3)return Type.midGame;
+        if (whitePieceCount >= 3 && blackPieceCount >= 3)return Type.midGame;
+
+        //check for draw by insufficient material after checking pieceCount>3, since it can only occur with fewer than 3 pieces on the board
+        int numHeavyPiecesAndPawns = numPieces[Type.Rook] + numPieces[Type.Queen] + numPieces[Type.Pawn] + numPieces[Type.Black | Type.Rook] + numPieces[Type.Black | Type.Queen] + numPieces[Type.Black | Type.Pawn];
+
+        if (StaticEval.gameIsDrawnByInsufficientMaterial( numHeavyPiecesAndPawns, numPieces[Type.Knight], numPieces[Type.Bishop], numPieces[Type.Black | Type.Knight], numPieces[Type.Black | Type.Bishop])){
+            return Type.gameIsADraw;
+        }
         return Type.endGame;
     }
     public void optimizeMoveOrder() {
@@ -1171,6 +1184,253 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         legalMovePriorities[fromIndex] = legalMovePriorities[fromIndex] ^ legalMovePriorities[toIndex];
     }
 
+
+
+    public void addMovesToMoveList(byte moveType, byte fromSquare, long toSquareBB) {
+        while (toSquareBB != 0) {
+            byte tempToSquare= (byte)Long.numberOfTrailingZeros(toSquareBB);
+            int newMove = Move.makeMoveFromBytes(moveType,fromSquare,tempToSquare,squareCentricPos[tempToSquare]);
+            legalMoves[indexOfFirstEmptyMove] = newMove;
+            indexOfFirstEmptyMove++;
+            toSquareBB &= toSquareBB-1;
+        }
+    }
+
+    public void generatePawnMoves(byte fromSquare) {//TODO: refactor this to make more optimal
+        long[] possibleMoves = new long[8];
+        if (whiteToMove) {
+            long fromSquareBB= Util.toBitboard(fromSquare);
+            long attackingSquares= PieceAttack.lookUpWhitePawnAttacks(fromSquare);
+            if (fromSquare/8==6){//on the seventh rank
+                long tempToSquareBB= fromSquareBB<<8;
+
+                tempToSquareBB &= emptySquares;
+                tempToSquareBB |= attackingSquares & blackPieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &=pinRay[indexOfPin];//if on the pin ray
+                tempToSquareBB &= checkResolveRay;
+
+                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
+            }
+            else {//not on the seventh rank, white to move
+                possibleMoves[Type.normalMove]|= fromSquareBB << 8 & emptySquares;
+                possibleMoves[Type.doublePawnMove]|=possibleMoves[Type.normalMove]<<8 & emptySquares & Constants.RANK_4;
+                possibleMoves[Type.normalMove]|= attackingSquares & blackPieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
+                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
+                    possibleMoves[Type.doublePawnMove] &=pinRay[indexOfPin];
+                }
+
+                possibleMoves[Type.normalMove] &= checkResolveRay;
+                possibleMoves[Type.doublePawnMove] &= checkResolveRay;
+
+
+                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<40;//en passant
+                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
+                //check to see if enPassant could be possible before doing slow pin check
+                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
+            }
+        }
+
+        else {
+            long fromSquareBB= Util.toBitboard(fromSquare);
+            long attackingSquares= PieceAttack.lookUpBlackPawnAttacks(fromSquare);
+            if (fromSquare/8==1){//on the second rank, black to move
+                long tempToSquareBB;
+                tempToSquareBB= fromSquareBB>>>8;
+
+                tempToSquareBB &= emptySquares;
+                tempToSquareBB |= attackingSquares & whitePieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &=pinRay[indexOfPin];//if on the pin ray
+                tempToSquareBB &= checkResolveRay;
+
+                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
+            }
+            else {//not on the second rank, black to move
+                possibleMoves[Type.normalMove]|= fromSquareBB >>> 8 & emptySquares;
+                possibleMoves[Type.doublePawnMove]|=possibleMoves[Type.normalMove]>>>8& emptySquares & Constants.RANK_5;
+                possibleMoves[Type.normalMove]|= attackingSquares & whitePieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
+                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
+                    possibleMoves[Type.doublePawnMove] &=pinRay[indexOfPin];
+                }
+                possibleMoves[Type.normalMove] &= checkResolveRay;
+                possibleMoves[Type.doublePawnMove] &= checkResolveRay;
+
+                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<16;//en passant
+                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
+                //check to see if enPassant could be possible before doing slow pin check
+                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
+            }
+        }
+
+        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves[Type.normalMove]);
+        addMovesToMoveList(Type.enPassant,fromSquare,possibleMoves[Type.enPassant]);
+        addMovesToMoveList(Type.doublePawnMove,fromSquare,possibleMoves[Type.doublePawnMove]);
+        addMovesToMoveList(Type.pawnPromotesToQ,fromSquare,possibleMoves[Type.pawnPromotesToQ]);
+        addMovesToMoveList(Type.pawnPromotesToN,fromSquare,possibleMoves[Type.pawnPromotesToN]);
+        addMovesToMoveList(Type.pawnPromotesToB,fromSquare,possibleMoves[Type.pawnPromotesToB]);
+        addMovesToMoveList(Type.pawnPromotesToR,fromSquare,possibleMoves[Type.pawnPromotesToR]);
+    }
+    private void generatePawnCapturesOnly(byte fromSquare) {//TODO: refactor this to make more optimal
+        long possibleMoves[] = new long[8];
+        if (whiteToMove) {
+            long fromSquareBB= Util.toBitboard(fromSquare);
+            long attackingSquares= PieceAttack.lookUpWhitePawnAttacks(fromSquare);
+
+            if (fromSquare/8==6){//on the seventh rank
+                long tempToSquareBB = attackingSquares & blackPieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &= pinRay[indexOfPin];//if on the pin ray
+                tempToSquareBB &= checkResolveRay;
+
+                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
+            }
+            else {//not on the seventh rank, white to move
+                possibleMoves[Type.normalMove]|= attackingSquares & blackPieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
+                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
+                }
+
+                possibleMoves[Type.normalMove] &= checkResolveRay;
+                possibleMoves[Type.doublePawnMove] &= checkResolveRay;
+
+                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<40;//en passant
+                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
+                //check to see if enPassant could be possible before doing slow pin check
+                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
+            }
+        }
+
+        else {
+            long fromSquareBB= Util.toBitboard(fromSquare);
+            long attackingSquares= PieceAttack.lookUpBlackPawnAttacks(fromSquare);
+
+            if (fromSquare/8==1){//on the second rank, black to move
+                long tempToSquareBB = attackingSquares & whitePieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &= pinRay[indexOfPin];//if on the pin ray
+                tempToSquareBB &= checkResolveRay;
+
+                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
+                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
+            }
+            else {//not on the second rank, black to move
+                possibleMoves[Type.normalMove]|= attackingSquares & whitePieces;
+
+                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
+                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
+                }
+
+                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<16;//en passant
+                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
+                //check to see if enPassant could be possible before doing slow pin check
+                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
+            }
+        }
+    }
+    public void generateKnightMoves(byte fromSquare, long notFriendlyPiecesBB) {
+        long possibleMoves = squareAttacksArray[fromSquare];
+
+        possibleMoves&= notFriendlyPiecesBB & checkResolveRay;
+
+        long squareBB = 1L<<fromSquare;
+        if ((pinnedPieces & squareBB) == squareBB && onPinRay(squareBB))possibleMoves=0;
+        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
+    }
+    public void generateBishopMoves(byte fromSquare, long notFriendlyPiecesBB) {
+        long possibleMoves = squareAttacksArray[fromSquare];
+
+        possibleMoves&= notFriendlyPiecesBB & checkResolveRay;
+
+        long squareBB = 1L<<fromSquare;
+        if ((pinnedPieces & squareBB) == squareBB && onPinRay(squareBB))possibleMoves &= pinRay[indexOfPin];
+        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
+    }
+    public void generateRookMoves(byte fromSquare, long notFriendlyPiecesBB) {
+        long possibleMoves = squareAttacksArray[fromSquare];
+
+        possibleMoves&= notFriendlyPiecesBB & checkResolveRay;
+
+        long squareBB = 1L<<fromSquare;
+        if ((pinnedPieces & squareBB) == squareBB && onPinRay(squareBB))possibleMoves &=pinRay[indexOfPin];
+        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
+    }
+    public void generateQueenMoves(byte fromSquare, long notFriendlyPiecesBB) {
+        long possibleMoves = squareAttacksArray[fromSquare];
+        possibleMoves&= notFriendlyPiecesBB & checkResolveRay;
+
+        long squareBB = Util.toBitboard(fromSquare);
+        if ((pinnedPieces & squareBB) == squareBB && onPinRay(squareBB))possibleMoves &=pinRay[indexOfPin];
+        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
+    }
+    public void generateKingMoves(byte fromSquare) {
+        long possibleMoves=PieceAttack.lookUpKingAttacks(fromSquare);
+        long possibleCastles=0;
+
+        if (whiteToMove) {
+            possibleMoves&= ~(whitePieces | blackAttacks);//can't move into check
+
+
+            if ((Constants.whiteCanCSPieceMask & allPieces | Constants.whiteCanCSCheckMask & blackAttacks) ==0){
+                possibleCastles+= Constants.g1 & castlingRights;
+            }
+
+            if ((Constants.whiteCanCLPieceMask & allPieces | Constants.whiteCanCLCheckMask & blackAttacks) == 0){
+                possibleCastles+= Constants.c1 & castlingRights;
+            }
+
+        }
+        else {//black to move
+            possibleMoves&= ~(blackPieces | whiteAttacks);//can't move into check
+
+            if ((Constants.blackCanCSPieceMask & allPieces | Constants.blackCanCSCheckMask & whiteAttacks) == 0){
+                possibleCastles+=Constants.g8 & castlingRights;
+            }
+
+            if ((Constants.blackCanCLPieceMask & allPieces | Constants.blackCanCLCheckMask & whiteAttacks) == 0){
+                possibleCastles+=Constants.c8 & castlingRights;
+            }
+
+        }
+
+        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
+        addMovesToMoveList(Type.castles,fromSquare,possibleCastles);
+    }
+    public void generateKingCapturesOnly(byte fromSquare) {
+        long possibleMoves = squareAttacksArray[fromSquare];
+
+        if (whiteToMove) {
+            possibleMoves&= ~(whitePieces | blackAttacks);//can't move into check
+        }
+        else {
+            possibleMoves&= ~(blackPieces | whiteAttacks);//can't move into check
+        }
+
+        addMovesToMoveList(Type.normalMove, fromSquare, possibleMoves);
+    }
+
+    public boolean onPinRay(long squareBB) {
+        for (indexOfPin=0;indexOfPin<8;indexOfPin++) {
+            if ((pinRay[indexOfPin] & squareBB) == squareBB) return true;
+        }
+        return false;
+    }//returns true if the square is on a pinRay and sets indexOfPin to which pin it is on
     public long findCheckResolveRay(long kingLocation) {//TODO: MAKE FASTER
         long tickerSquareBB;
         long tempRAY=0;
@@ -1270,286 +1530,6 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         tempRAY=0;
         return tempRAY;
     }
-
-    public void addMovesToMoveList(byte moveType, byte fromSquare, long toSquareBB) {
-        while (toSquareBB != 0) {
-            byte tempToSquare= (byte)Long.numberOfTrailingZeros(toSquareBB);
-            int newMove = Move.makeMoveFromBytes(moveType,fromSquare,tempToSquare,squareCentricPos[tempToSquare]);
-            legalMoves[indexOfFirstEmptyMove] = newMove;
-            indexOfFirstEmptyMove++;
-            toSquareBB &= toSquareBB-1;
-        }
-    }
-
-    public static byte getPieceFromSquareWithBB (int square, long[] pa) {
-        long squareBB=toBitboard(square);
-        if ((squareBB|pa[1])==pa[1])return Type.White| Type.Pawn;
-        else if ((squareBB|pa[2])==pa[2])return Type.White| Type.Knight;
-        else if ((squareBB|pa[3])==pa[3])return Type.White| Type.Bishop;
-        else if ((squareBB|pa[4])==pa[4])return Type.White| Type.Rook;
-        else if ((squareBB|pa[5])==pa[5])return Type.White| Type.Queen;
-        else if ((squareBB|pa[6])==pa[6])return Type.White| Type.King;
-        else if ((squareBB|pa[9])==pa[9])return Type.Black| Type.Pawn;
-        else if ((squareBB|pa[10])==pa[10])return Type.Black| Type.Knight;
-        else if ((squareBB|pa[11])==pa[11])return Type.Black| Type.Bishop;
-        else if ((squareBB|pa[12])==pa[12])return Type.Black| Type.Rook;
-        else if ((squareBB|pa[13])==pa[13])return Type.Black| Type.Queen;
-        else if ((squareBB|pa[14])==pa[14])return Type.Black| Type.King;
-        else return Type.Empty;
-    }
-
-    private static short getPieceFromString(String str) {
-        if (str.equals("P")) return Type.White | Type.Pawn;
-        else if (str.equals("p")) return Type.Black | Type.Pawn;
-        else if (str.equals("N")) return Type.White | Type.Knight;
-        else if (str.equals("n")) return Type.Black | Type.Knight;
-        else if (str.equals("B")) return Type.White | Type.Bishop;
-        else if (str.equals("b")) return Type.Black | Type.Bishop;
-        else if (str.equals("R")) return Type.White | Type.Rook;
-        else if (str.equals("r")) return Type.Black | Type.Rook;
-        else if (str.equals("Q")) return Type.White | Type.Queen;
-        else if (str.equals("q")) return Type.Black | Type.Queen;
-        else if (str.equals("K")) return Type.White | Type.King;
-        else if (str.equals("k")) return Type.Black | Type.King;
-        return -1;
-    }
-
-    public void generatePawnMoves(byte fromSquare) {//TODO: refactor this to make more optimal
-        long[] possibleMoves = new long[8];
-        if (whiteToMove) {
-            long fromSquareBB= toBitboard(fromSquare);
-            long attackingSquares= PieceAttack.lookUpWhitePawnAttacks(fromSquare);
-            if (fromSquare/8==6){//on the seventh rank
-                long tempToSquareBB= fromSquareBB<<8;
-
-                tempToSquareBB &= emptySquares;
-                tempToSquareBB |= attackingSquares & blackPieces;
-
-                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &=pinRay[indexOfPin];//if on the pin ray
-                tempToSquareBB &= checkResolveRay;
-
-                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
-            }
-            else {//not on the seventh rank, white to move
-                possibleMoves[Type.normalMove]|= fromSquareBB << 8 & emptySquares;
-                possibleMoves[Type.doublePawnMove]|=possibleMoves[Type.normalMove]<<8 & emptySquares & Constants.RANK_4;
-                possibleMoves[Type.normalMove]|= attackingSquares & blackPieces;
-
-                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
-                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
-                    possibleMoves[Type.doublePawnMove] &=pinRay[indexOfPin];
-                }
-
-                possibleMoves[Type.normalMove] &= checkResolveRay;
-                possibleMoves[Type.doublePawnMove] &= checkResolveRay;
-
-
-                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<40;//en passant
-                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
-                //check to see if enPassant could be possible before doing slow pin check
-                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
-            }
-        }
-
-        else {
-            long fromSquareBB= toBitboard(fromSquare);
-            long attackingSquares= PieceAttack.lookUpBlackPawnAttacks(fromSquare);
-            if (fromSquare/8==1){//on the second rank, black to move
-                long tempToSquareBB;
-                tempToSquareBB= fromSquareBB>>>8;
-
-                tempToSquareBB &= emptySquares;
-                tempToSquareBB |= attackingSquares & whitePieces;
-
-                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &=pinRay[indexOfPin];//if on the pin ray
-                tempToSquareBB &= checkResolveRay;
-
-                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
-            }
-            else {//not on the second rank, black to move
-                possibleMoves[Type.normalMove]|= fromSquareBB >>> 8 & emptySquares;
-                possibleMoves[Type.doublePawnMove]|=possibleMoves[Type.normalMove]>>>8& emptySquares & Constants.RANK_5;
-                possibleMoves[Type.normalMove]|= attackingSquares & whitePieces;
-
-                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
-                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
-                    possibleMoves[Type.doublePawnMove] &=pinRay[indexOfPin];
-                }
-                possibleMoves[Type.normalMove] &= checkResolveRay;
-                possibleMoves[Type.doublePawnMove] &= checkResolveRay;
-
-                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<16;//en passant
-                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
-                //check to see if enPassant could be possible before doing slow pin check
-                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
-            }
-        }
-
-        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves[Type.normalMove]);
-        addMovesToMoveList(Type.enPassant,fromSquare,possibleMoves[Type.enPassant]);
-        addMovesToMoveList(Type.doublePawnMove,fromSquare,possibleMoves[Type.doublePawnMove]);
-        addMovesToMoveList(Type.pawnPromotesToQ,fromSquare,possibleMoves[Type.pawnPromotesToQ]);
-        addMovesToMoveList(Type.pawnPromotesToN,fromSquare,possibleMoves[Type.pawnPromotesToN]);
-        addMovesToMoveList(Type.pawnPromotesToB,fromSquare,possibleMoves[Type.pawnPromotesToB]);
-        addMovesToMoveList(Type.pawnPromotesToR,fromSquare,possibleMoves[Type.pawnPromotesToR]);
-    }
-    private void generatePawnCapturesOnly(byte fromSquare) {//TODO: refactor this to make more optimal
-        long possibleMoves[] = new long[8];
-        if (whiteToMove) {
-            long fromSquareBB= toBitboard(fromSquare);
-            long attackingSquares= PieceAttack.lookUpWhitePawnAttacks(fromSquare);
-
-            if (fromSquare/8==6){//on the seventh rank
-                long tempToSquareBB = attackingSquares & blackPieces;
-
-                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &= pinRay[indexOfPin];//if on the pin ray
-                tempToSquareBB &= checkResolveRay;
-
-                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
-            }
-            else {//not on the seventh rank, white to move
-                possibleMoves[Type.normalMove]|= attackingSquares & blackPieces;
-
-                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
-                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
-                }
-
-                possibleMoves[Type.normalMove] &= checkResolveRay;
-                possibleMoves[Type.doublePawnMove] &= checkResolveRay;
-
-                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<40;//en passant
-                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
-                //check to see if enPassant could be possible before doing slow pin check
-                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
-            }
-        }
-
-        else {
-            long fromSquareBB= toBitboard(fromSquare);
-            long attackingSquares= PieceAttack.lookUpBlackPawnAttacks(fromSquare);
-
-            if (fromSquare/8==1){//on the second rank, black to move
-                long tempToSquareBB = attackingSquares & whitePieces;
-
-                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) tempToSquareBB &= pinRay[indexOfPin];//if on the pin ray
-                tempToSquareBB &= checkResolveRay;
-
-                possibleMoves[Type.pawnPromotesToQ]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToN]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToB]=tempToSquareBB;
-                possibleMoves[Type.pawnPromotesToR]=tempToSquareBB;
-            }
-            else {//not on the second rank, black to move
-                possibleMoves[Type.normalMove]|= attackingSquares & whitePieces;
-
-                if ((pinnedPieces & fromSquareBB) == fromSquareBB && onPinRay(fromSquareBB)) {
-                    possibleMoves[Type.normalMove] &=pinRay[indexOfPin];
-                }
-
-                possibleMoves[Type.enPassant]= attackingSquares & (long)enPassantTargetFiles<<16;//en passant
-                boolean enPassantCouldBePossible=possibleMoves[Type.enPassant] !=0;
-                //check to see if enPassant could be possible before doing slow pin check
-                if (enPassantCouldBePossible && enPassantIsPinned(fromSquareBB,possibleMoves[Type.enPassant])) possibleMoves[Type.enPassant] = 0;
-            }
-        }
-    }
-    public void generateKnightMoves(byte fromSquare, long notFriendlyPiecesBB) {
-        long possibleMoves = squareAttacksArray[fromSquare];
-
-        possibleMoves&= notFriendlyPiecesBB & checkResolveRay;
-
-        long squareBB = 1L<<fromSquare;
-        if ((pinnedPieces & squareBB) == squareBB && onPinRay(squareBB))possibleMoves=0;
-        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
-    }
-    public void generateBishopMoves(byte fromSquare, long notFriendlyPiecesBB) {
-        long possibleMoves = squareAttacksArray[fromSquare];
-
-        possibleMoves&= notFriendlyPiecesBB & checkResolveRay;
-
-        long squareBB = 1L<<fromSquare;
-        if ((pinnedPieces & squareBB) == squareBB && onPinRay(squareBB))possibleMoves &= pinRay[indexOfPin];
-        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
-    }
-    public void generateRookMoves(byte fromSquare, long notFriendlyPiecesBB) {
-        long possibleMoves = squareAttacksArray[fromSquare];
-
-        possibleMoves&= notFriendlyPiecesBB & checkResolveRay;
-
-        long squareBB = 1L<<fromSquare;
-        if ((pinnedPieces & squareBB) == squareBB && onPinRay(squareBB))possibleMoves &=pinRay[indexOfPin];
-        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
-    }
-    public void generateQueenMoves(byte fromSquare, long notFriendlyPiecesBB) {
-        long possibleMoves = squareAttacksArray[fromSquare];
-        possibleMoves&= notFriendlyPiecesBB & checkResolveRay;
-
-        long squareBB = toBitboard(fromSquare);
-        if ((pinnedPieces & squareBB) == squareBB && onPinRay(squareBB))possibleMoves &=pinRay[indexOfPin];
-        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
-    }
-    public void generateKingMoves(byte fromSquare) {
-        long possibleMoves=PieceAttack.lookUpKingAttacks(fromSquare);
-        long possibleCastles=0;
-
-        if (whiteToMove) {
-            possibleMoves&= ~(whitePieces | blackAttacks);//can't move into check
-
-
-            if ((Constants.whiteCanCSPieceMask & allPieces | Constants.whiteCanCSCheckMask & blackAttacks) ==0){
-                possibleCastles+= Constants.g1 & castlingRights;
-            }
-
-            if ((Constants.whiteCanCLPieceMask & allPieces | Constants.whiteCanCLCheckMask & blackAttacks) == 0){
-                possibleCastles+= Constants.c1 & castlingRights;
-            }
-
-        }
-        else {//black to move
-            possibleMoves&= ~(blackPieces | whiteAttacks);//can't move into check
-
-            if ((Constants.blackCanCSPieceMask & allPieces | Constants.blackCanCSCheckMask & whiteAttacks) == 0){
-                possibleCastles+=Constants.g8 & castlingRights;
-            }
-
-            if ((Constants.blackCanCLPieceMask & allPieces | Constants.blackCanCLCheckMask & whiteAttacks) == 0){
-                possibleCastles+=Constants.c8 & castlingRights;
-            }
-
-        }
-
-        addMovesToMoveList(Type.normalMove,fromSquare,possibleMoves);
-        addMovesToMoveList(Type.castles,fromSquare,possibleCastles);
-    }
-    public void generateKingCapturesOnly(byte fromSquare) {
-        long possibleMoves = squareAttacksArray[fromSquare];
-
-        if (whiteToMove) {
-            possibleMoves&= ~(whitePieces | blackAttacks);//can't move into check
-        }
-        else {
-            possibleMoves&= ~(blackPieces | whiteAttacks);//can't move into check
-        }
-
-        addMovesToMoveList(Type.normalMove, fromSquare, possibleMoves);
-    }
-
-    public boolean onPinRay(long squareBB) {
-        for (indexOfPin=0;indexOfPin<8;indexOfPin++) {
-            if ((pinRay[indexOfPin] & squareBB) == squareBB) return true;
-        }
-        return false;
-    }//returns true if the square is on a pinRay and sets indexOfPin to which pin it is on
-
     private boolean enPassantIsPinned(long fromSquareBB, long toSquareBB) {
         long[] tempPA = PieceArray;
         byte[] tempSCP = squareCentricPos;
@@ -1567,8 +1547,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         return newPosition.inCheck;
     }
     private void quietlyEnPassant(byte fromSquare, byte toSquare) {//TODO: refactor and delete this
-        long fromSquareBB = toBitboard(fromSquare);
-        long toSquareBB = toBitboard(toSquare);
+        long fromSquareBB = Util.toBitboard(fromSquare);
+        long toSquareBB = Util.toBitboard(toSquare);
         byte movingPiece = squareCentricPos[fromSquare];
 
         int enPassantCapturedSquare= toSquare-8;
@@ -1583,7 +1563,7 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         squareCentricPos[enPassantCapturedSquare]= Type.Empty;
 
         PieceArray[movingPiece]^=fromSquareBB|toSquareBB;
-        PieceArray[colorNotMoving | Type.Pawn]^=toBitboard(enPassantCapturedSquare);
+        PieceArray[colorNotMoving | Type.Pawn]^= Util.toBitboard(enPassantCapturedSquare);
 
         hundredHalfmoveTimer=0;
         whiteToMove= !whiteToMove;
@@ -1729,7 +1709,7 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                         fen+=emptySquareCounter;
                         emptySquareCounter=0;
                     }
-                    fen+=getPieceStringFromShort(squareCentricPos[tickerSquare]);
+                    fen += Util.getPieceStringFromShort(squareCentricPos[tickerSquare]);
                 }
                 tickerSquare++;
             }
@@ -1740,7 +1720,7 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                     fen+=emptySquareCounter;
                     emptySquareCounter=0;
                 }
-                fen+=getPieceStringFromShort(squareCentricPos[tickerSquare]);
+                fen += Util.getPieceStringFromShort(squareCentricPos[tickerSquare]);
             }
 
             if (emptySquareCounter!=0){
@@ -1783,56 +1763,4 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         fen+=0;//not keeping track of the move timer
         return fen;
     }
-    private String getPieceStringFromShort(short piece) {//assume not empty
-        switch (piece) {
-            case Type.White | Type.Pawn -> {
-                return "P";
-            }
-            case Type.White | Type.Knight -> {
-                return "N";
-            }
-            case Type.White | Type.Bishop -> {
-                return "B";
-            }
-            case Type.White | Type.Rook -> {
-                return "R";
-            }
-            case Type.White | Type.Queen -> {
-                return "Q";
-            }
-            case Type.White | Type.King -> {
-                return "K";
-            }
-            case Type.Black | Type.Pawn -> {
-                return "p";
-            }
-            case Type.Black | Type.Knight -> {
-                return "n";
-            }
-            case Type.Black | Type.Bishop -> {
-                return "b";
-            }
-            case Type.Black | Type.Rook -> {
-                return "r";
-            }
-            case Type.Black | Type.Queen -> {
-                return "q";
-            }
-            case Type.Black | Type.King -> {
-                return "k";
-            }
-        }
-        return "invalidInputError";
-    }
-
-    private static int[] cloneMoveArray(int[] input, int indexOfFirstEmptyMove) {
-        int[] ret = new int[218];
-        System.arraycopy(input, 0, ret, 0,indexOfFirstEmptyMove);
-        return ret;
-    }
-    private static long toBitboard (int square){
-        return 1L<<square;
-    }
-
-
 }

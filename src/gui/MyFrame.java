@@ -3,6 +3,7 @@ package gui;
 import javax.swing.*;
 import java.awt.event.*;
 
+import ChessUtilities.Util;
 import position.CurrentPosition;
 import position.Position;
 import engine.MainEngine;
@@ -73,7 +74,7 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
         }
         else if (e.getKeyChar() == 'P') {
             for (int x=0;x<64;x++) {
-                CurrentPosition.position.squareCentricPos[x]= Position.getPieceFromSquareWithBB(x,CurrentPosition.position.PieceArray);
+                CurrentPosition.position.squareCentricPos[x]= Util.getPieceFromSquareWithBB(x,CurrentPosition.position.PieceArray);
             }
             System.arraycopy(CurrentPosition.position.squareCentricPos, 0, Graphical.graphicSquareCentricPos, 0, 64);
             repaint();

@@ -16,7 +16,7 @@ public class StaticEval {
     static final int endGameRookValue = 550;
     static final int endGameQueenValue = 1050;
 
-    private static final boolean[][][][] gameIsDrawnByInsufficientMaterial = new boolean[3][3][3][3];//first is white knight, then white bishop, then black knight, then black bishop
+    private static final boolean[][][][] gameIsDrawnByInsufficientMaterial = new boolean[4][4][4][4];//first is white knight, then white bishop, then black knight, then black bishop
     static {
         gameIsDrawnByInsufficientMaterial[0][0][0][0] = true;//no pieces
         gameIsDrawnByInsufficientMaterial[1][0][0][0] = true;//only 1 piece total
@@ -29,9 +29,13 @@ public class StaticEval {
         gameIsDrawnByInsufficientMaterial[0][1][0][1] = true;
         gameIsDrawnByInsufficientMaterial[2][0][0][0] = true;//2 pieces, same color only draw with knights
         gameIsDrawnByInsufficientMaterial[0][0][2][0] = true;
+
+        //all other games are not drawn
+        //can have up to 3 pieces for each piece type as an input, since the method is only called if there are 3 or fewer total pieces for each color
     }
 
-    public static boolean gameIsDrawnByInsufficientMaterial(int numWhiteKnights, int numWhiteBishops, int numBlackKnights, int numBlackBishops) {
+    public static boolean gameIsDrawnByInsufficientMaterial(int numHeavyPiecesAndPawns, int numWhiteKnights, int numWhiteBishops, int numBlackKnights, int numBlackBishops) {
+        if (numHeavyPiecesAndPawns >0)return false;//game never drawn by insufficient material if there are pawns, queens, or rooks on the board
         return gameIsDrawnByInsufficientMaterial[numWhiteKnights][numWhiteBishops][numBlackKnights][numBlackBishops];
     }
 

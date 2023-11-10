@@ -4,6 +4,7 @@ import move.GenerateMagicBitBoards;
 import move.PieceAttack;
 import position.CurrentPosition;
 import tests.EvaluationTests;
+import tests.MoveTests;
 
 
 public class MainEngine {
@@ -27,7 +28,7 @@ public class MainEngine {
 
     public static void startPosition() {
         String startingPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        CurrentPosition.InitializePosition(startingPosition,false,false, 1000);
+        CurrentPosition.InitializePosition(startingPosition,true,false, 1000);
         //Normal starting position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
     }
 }

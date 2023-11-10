@@ -1,5 +1,6 @@
 package tests;
 
+import ChessUtilities.Util;
 import position.Position;
 import position.CurrentPosition;
 import move.Move;
@@ -85,7 +86,7 @@ public class MoveTests {
         long ret=0;
         for (int i=0;i<pos.indexOfFirstEmptyMove;i++) {
             if (Move.getFromSquareFromMove(pos.legalMoves[i]) == tempFromSquare){
-                ret|=toBitboard(Move.getToSquareFromMove(pos.legalMoves[i]));
+                ret|= Util.toBitboard(Move.getToSquareFromMove(pos.legalMoves[i]));
             }
         }
         return ret;
@@ -174,8 +175,5 @@ public class MoveTests {
     private static long sumOfNodes(int maxNodeIndex) {
         if (maxNodeIndex==0) return targetNodes[0];
         return targetNodes[maxNodeIndex] + sumOfNodes(maxNodeIndex-1);
-    }
-    private static long toBitboard(int square) {
-        return 1L<<square;
     }
 }

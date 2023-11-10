@@ -19,12 +19,12 @@ public class Evaluator implements Runnable{//always analyzes the current positio
         //in the future, would like to make time constant and variable depth
         //right now this is the other way around
         //TODO: implement iterative deepening
-        findBestMove(pos,3);
+        findBestMove(pos,4);
     }
 
     //this level's position already has legal moves, but not in order
     public void findBestMove(Position pos, int depth){
-        //pos.optimizeMoveOrder();
+        pos.optimizeMoveOrder();
         int alpha = Integer.MIN_VALUE+1;
         int beta = Integer.MAX_VALUE-1;
 
@@ -71,7 +71,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             return Integer.MIN_VALUE+1;//always the worst possible position for the player to move in checkmate, so always the worst value
         }//be careful about integer overflow errors with this. add one to be safe
 
-        //pos.optimizeMoveOrder();
+        pos.optimizeMoveOrder();
         for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
             int moveToMake = pos.legalMoves[i];
 
@@ -94,7 +94,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
         alpha = Math.max(alpha, standingPat);
 
         pos.calculateCapturingMovesOnly();
-        //pos.optimizeMoveOrder();
+        pos.optimizeMoveOrder();
         for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {//keep recursion going until no more captures
             int moveEvaluating = pos.legalMoves[i];
 
