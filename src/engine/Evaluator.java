@@ -1,7 +1,7 @@
 package engine;
 
+import ChessUtilities.Util;
 import eval.StaticEval;
-import move.Move;
 import position.CurrentPosition;
 import position.Position;
 import position.Type;
@@ -10,6 +10,13 @@ public class Evaluator implements Runnable{//always analyzes the current positio
 
     public int bestMove;
     public int bestEval;
+    public final int MAX_DEPTH;
+    public int[] principalVariation;
+
+    public Evaluator(int depth) {
+        this.MAX_DEPTH = depth;
+        principalVariation = new int[depth];
+    }
 
     @Override
     public void run() {
@@ -19,7 +26,10 @@ public class Evaluator implements Runnable{//always analyzes the current positio
         //in the future, would like to make time constant and variable depth
         //right now this is the other way around
         //TODO: implement iterative deepening
-        findBestMove(pos,4);
+        //will need to save best continuation
+        //TODO: add transposition tables
+        //TODO: add opening database
+        findBestMove(pos, MAX_DEPTH);
     }
 
     //this level's position already has legal moves, but not in order
@@ -46,7 +56,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             int moveToMake = pos.legalMoves[i];
 
             pos.makeMove(moveToMake);
-            int eval = -evaluatePosition(pos, depth, -beta, -alpha);
+            int eval = -evaluatePosition(pos, depth-1, -beta, -alpha);
             pos.unmakeMove(moveToMake);
 
             if (eval > bestEval){
@@ -59,8 +69,8 @@ public class Evaluator implements Runnable{//always analyzes the current positio
     }
 
     //takes input of position without legal moves or moves ordered
-    public int evaluatePosition(Position pos, int depth, int alpha, int beta) {
-        if (depth==0) {
+    public int evaluatePosition(Position pos, int depthLeft, int alpha, int beta) {
+        if (depthLeft==0) {
             return quiescenceEvaluation(pos,alpha,beta);
         }
 
@@ -76,13 +86,16 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             int moveToMake = pos.legalMoves[i];
 
             pos.makeMove(moveToMake);
-            int eval = -evaluatePosition(pos,depth-1,-beta,-alpha);
+            int eval = -evaluatePosition(pos,depthLeft-1,-beta,-alpha);
             pos.unmakeMove(moveToMake);
 
             if (eval >= beta) {
                 return beta;
             }
-            alpha = Math.max(alpha, eval);
+            if (alpha < eval) {//found a new best move
+                alpha = eval;
+                bestMove = moveToMake;
+            }
         }
         return alpha;
     }

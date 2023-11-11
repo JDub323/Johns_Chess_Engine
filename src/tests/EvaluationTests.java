@@ -6,7 +6,7 @@ import position.Position;
 
 import java.lang.reflect.Array;
 
-public class EvaluationTests {
+public class EvaluationTests {//TODO: add more evaluation tests to quickly make sure I didn't break my code by adding something
 
     private static final String[] MGTestPositions = {
             "r1bq1br1/ppppk1p1/5p2/4pQp1/3P4/4K3/PPP1PPPP/RN3B1R w - - 0 5"
@@ -29,7 +29,7 @@ public class EvaluationTests {
     };
 
 
-    private static final Evaluator evaluator = new Evaluator();
+    private static Evaluator evaluator;
 
     public static void testAllTestPositions(int depth) {
         testMidGameTestPositions(depth);
@@ -52,6 +52,7 @@ public class EvaluationTests {
 
     public static void testTestPosition(String fen, int depth, int positionNumber) {
         Position pos = new Position(fen);
+        evaluator = new Evaluator(depth);
 
         evaluator.findBestMove(pos,depth);
 
@@ -63,6 +64,7 @@ public class EvaluationTests {
 
     public static void testEvalOfMove(String positionFen, String move, int depth) {
         Position pos = new Position(positionFen);
+        evaluator = new Evaluator(depth);
 
         int moveToMake = Move.makeMoveFromString(move, (byte) 0, (byte) 0);
         pos.makeMove(moveToMake);

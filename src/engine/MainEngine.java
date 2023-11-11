@@ -3,6 +3,7 @@ package engine;
 import move.GenerateMagicBitBoards;
 import move.PieceAttack;
 import position.CurrentPosition;
+import position.Zobrist;
 import tests.EvaluationTests;
 import tests.MoveTests;
 
@@ -12,6 +13,7 @@ public class MainEngine {
     public static void main(String[] args) {
         PieceAttack.generateMoveArrays();
         GenerateMagicBitBoards.makeBitboardDatabase();
+        Zobrist.initializeZobristKeys();
         gui.FrameHolder.makeFrame();
         startPosition();
         //start move search
@@ -27,8 +29,8 @@ public class MainEngine {
     }
 
     public static void startPosition() {
-        String startingPosition = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-        CurrentPosition.InitializePosition(startingPosition,true,false, 1000);
+        String startingPosition = "3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1";
+        CurrentPosition.InitializePosition(startingPosition,true,true, 1000);
         //Normal starting position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
     }
 }

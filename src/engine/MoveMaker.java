@@ -23,7 +23,7 @@ public class MoveMaker implements Runnable{
     }
 
     private void startMoveSearch() {
-        evaluator = new Evaluator();
+        evaluator = new Evaluator(5);//TODO: change this to infinity when implementing iterative deepening
         bestMoveFinder = new Thread(evaluator);
         bestMoveFinder.start();
     }
@@ -52,7 +52,7 @@ public class MoveMaker implements Runnable{
             makeBestMove(evaluator.bestMove);
             FrameHolder.chessGraphics.updateGraphics();
             Graphical.stopAllMoves=false;
-            CurrentPosition.updateMoveMakers();
+            if (evaluator.bestMove != Type.illegalMove)CurrentPosition.updateMoveMakers();//don't try to make a move when the game is over
         }
     }
 }

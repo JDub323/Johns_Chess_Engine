@@ -7,7 +7,7 @@ import java.util.Stack;
 import ChessUtilities.Util;
 
 
-public class Position {//TODO: get rid of unnecessary methods and put them in another class
+public class Position {
 
     //Position representation variables
     public long[] PieceArray = new long[15];
@@ -34,6 +34,7 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
     public byte[] numPieces = new byte[15];
     public byte[][] colorIndexBoard = new byte[2][64];//0 for white, 1 for black
     public byte gameState;
+    public int moveNumber;
     public long zobristKey;
 
     //additional useful variables in the position
@@ -150,9 +151,12 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
 
         String moveClocks = fen.substring(endOfFen-3,endOfFen);
         hundredHalfmoveTimer= Integer.parseInt(moveClocks.substring(0,1));
+        moveNumber= Integer.parseInt(moveClocks.substring(2,3));
 
         calculatePreCalculatedData();
         calculateLegalMoves();
+
+        zobristKey = Zobrist.getZobristKeyFromPosition(whiteToMove,castlingRights,enPassantTargetFiles,squareCentricPos);
     }
     public Position(long[] PieceArray, byte[] squareCentricPos, boolean whiteToMove) {
         System.arraycopy(squareCentricPos, 0, this.squareCentricPos, 0, 64);
@@ -166,6 +170,12 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
     public void makeMove(int move) {
         quietlyMakeMove(move);
         calculatePreCalculatedData();
+
+        /*
+        long correctZobristKey = Zobrist.getZobristKeyFromPosition(whiteToMove,castlingRights,enPassantTargetFiles,squareCentricPos);
+        System.out.println("Correct Zobrist Key: "+correctZobristKey+" Actual Zobrist Key: "+zobristKey);
+
+         */
     }
     private void quietlyMakeMove(int move) {//TODO: make only one switch case, not two
         PreviousMadeMoves.push(move);
@@ -181,6 +191,13 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         byte movingPiece = squareCentricPos[fromSquare];
         byte colorIndex = (byte)(movingPiece/8);
         byte index = colorIndexBoard[colorIndex][fromSquare];
+        byte capturedPiece = squareCentricPos[toSquare];
+
+        zobristKey ^= Zobrist.getKeyForMovingColor();
+        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, fromSquare);
+        if (capturedPiece != 0)zobristKey ^= Zobrist.getKeyFromPieceAndSquare(capturedPiece, toSquare);
+        zobristKey ^= Zobrist.getKeyFromCastlingRights(castlingRights);
+        zobristKey ^= Zobrist.getKeyFromEPFile(enPassantTargetFiles);
 
         switch (moveType) {
             case Type.normalMove -> {
@@ -193,13 +210,15 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
 
                 byte squareOfCapturedPawn = (byte) (whiteToMove ? toSquare-8 : toSquare+8);
                 colorIndex ^= 1;
-                byte capturedPiece = (byte) (colorIndex*8 | Type.Pawn);
+                capturedPiece = (byte) (colorIndex*8 | Type.Pawn);
 
                 numPieces[capturedPiece]--;
                 index = colorIndexBoard[colorIndex][squareOfCapturedPawn];
                 byte square = pieceSquareList[capturedPiece][numPieces[capturedPiece]];
                 pieceSquareList[capturedPiece][index] = square;
                 colorIndexBoard[colorIndex][square] = index;
+
+                capturedPiece = squareCentricPos[toSquare];//reset the captured piece
             }
             case Type.doublePawnMove -> {
                 colorIndexBoard[colorIndex][toSquare] = index;
@@ -293,7 +312,6 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 numPieces[piecePromotingTo]++;
             }
         }
-        byte capturedPiece = squareCentricPos[toSquare];
         if (capturedPiece != Type.Empty) {//update piece list for captured piece
             numPieces[capturedPiece]--;
             colorIndex ^= 1;
@@ -324,9 +342,17 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
 
                 //Can AND the rooks bitshifted to where the king will be to check if the rook still exists on that square, if it doesn't, will lose the right to castle
                 castlingRights &= PieceArray[Type.White | Type.Rook]<<2 | (PieceArray[Type.White | Type.Rook] & Constants.CORNERS)>>>1 | PieceArray[Type.Black | Type.Rook]<<2 | (PieceArray[Type.Black | Type.Rook] & Constants.CORNERS)>>>1;
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
             }
             case Type.enPassant -> {
                 quietlyEnPassant(fromSquare, toSquare);
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                byte capturedSquare = (byte) (whiteToMove ? toSquare+8 : toSquare-8);//called on after white to move is switched
+                byte capturedColor = (byte) (colorIndex*8);
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(capturedColor | Type.Pawn, capturedSquare);
             }
             case Type.doublePawnMove -> {
                 long fromSquareBB = Util.toBitboard(fromSquare);
@@ -340,6 +366,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 hundredHalfmoveTimer=0;
                 whiteToMove= !whiteToMove;
                 enPassantTargetFiles = 1<<toSquare%8;//creates enPassantTargetFile
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
             }
             case Type.castles -> {
                 switch (toSquare) {
@@ -352,6 +380,10 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                         squareCentricPos[7]= Type.Empty;
 
                         castlingRights&= Type.notWhiteCanCS & Type.notWhiteCanCL;
+
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Rook, 7);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Rook, 5);
                     }
                     case 62 -> {//black castles short
                         PieceArray[Type.Black| Type.King]^= Constants.g8 | Constants.e8;
@@ -362,6 +394,10 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                         squareCentricPos[63]= Type.Empty;
 
                         castlingRights&= Type.notBlackCanCS & Type.notBlackCanCL;
+
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Black | Type.Rook, 63);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Black | Type.Rook, 61);
                     }
                     case 2 -> {//white castles long
                         PieceArray[Type.White| Type.King]^= Constants.c1 | Constants.e1;
@@ -372,6 +408,10 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                         squareCentricPos[4]= Type.Empty;
 
                         castlingRights&= Type.notWhiteCanCS & Type.notWhiteCanCL;
+
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Rook, 0);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Rook, 3);
                     }
                     case 58 -> {//black castles long
                         PieceArray[Type.Black| Type.King]^= Constants.c8 | Constants.e8;
@@ -382,6 +422,10 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                         squareCentricPos[60]= Type.Empty;
 
                         castlingRights&= Type.notBlackCanCS & Type.notBlackCanCL;
+
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Black | Type.Rook, 56);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Black | Type.Rook, 59);
                     }
                 }
 
@@ -405,6 +449,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 PieceArray[colorPromoting | Type.Queen]^=toSquareBB;
                 PieceArray[capturedPiece] ^=toSquareBB;
 
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare((byte)(colorPromoting | Type.Queen), toSquare);
+
                 hundredHalfmoveTimer=0;
                 whiteToMove= !whiteToMove;
                 enPassantTargetFiles=0;
@@ -424,6 +470,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 PieceArray[colorPromoting | Type.Pawn]^=fromSquareBB;
                 PieceArray[colorPromoting | Type.Knight]^=toSquareBB;
                 PieceArray[capturedPiece] ^=toSquareBB;
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare((byte)(colorPromoting | Type.Knight), toSquare);
 
                 hundredHalfmoveTimer=0;
                 whiteToMove= !whiteToMove;
@@ -445,6 +493,8 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 PieceArray[colorPromoting | Type.Bishop]^=toSquareBB;
                 PieceArray[capturedPiece] ^=toSquareBB;
 
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare((byte)(colorPromoting | Type.Bishop), toSquare);
+
                 hundredHalfmoveTimer=0;
                 whiteToMove= !whiteToMove;
                 enPassantTargetFiles=0;
@@ -465,14 +515,19 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 PieceArray[colorPromoting | Type.Rook]^=toSquareBB;
                 PieceArray[capturedPiece] ^=toSquareBB;
 
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare((byte)(colorPromoting | Type.Rook), toSquare);
+
                 hundredHalfmoveTimer=0;
                 whiteToMove= !whiteToMove;
                 enPassantTargetFiles=0;
             }
         }
 
+        zobristKey ^= Zobrist.getKeyFromCastlingRights(castlingRights);
+        zobristKey ^= Zobrist.getKeyFromEPFile(enPassantTargetFiles);
 
         indexOfFirstEmptyMove=0;
+        moveNumber++;
     }
     public void unmakeMove(int move) {
         byte fromSquare = Move.getFromSquareFromMove(move);
@@ -481,12 +536,19 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         byte movingPiece = squareCentricPos[toSquare];
         byte colorIndex = (byte)(movingPiece/8);
         byte index = colorIndexBoard[colorIndex][toSquare];
+        byte capturedPiece = Move.getCapturedPieceFromMove(move);
 
+        zobristKey ^= Zobrist.getKeyForMovingColor();
+        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, fromSquare);
+        if (capturedPiece != 0)zobristKey ^= Zobrist.getKeyFromPieceAndSquare(capturedPiece, toSquare);
+        zobristKey ^= Zobrist.getKeyFromCastlingRights(castlingRights);
+        zobristKey ^= Zobrist.getKeyFromEPFile(enPassantTargetFiles);
 
         switch (moveType) {
             case Type.normalMove -> {
                 colorIndexBoard[colorIndex][fromSquare] = index;
                 pieceSquareList[movingPiece][index] = fromSquare;
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
             }
             case Type.enPassant -> {
                 colorIndexBoard[colorIndex][fromSquare] = index;
@@ -494,15 +556,21 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
 
                 byte squareOfCapturedPawn = (byte) (!whiteToMove ? toSquare-8 : toSquare+8);//try switching these if doesn't work on first try
                 colorIndex ^= 1;
-                byte capturedPiece = (byte) (colorIndex*8 | Type.Pawn);
+                capturedPiece = (byte) (colorIndex*8 | Type.Pawn);
 
                 pieceSquareList[capturedPiece][numPieces[capturedPiece]] = squareOfCapturedPawn;
                 colorIndexBoard[colorIndex][squareOfCapturedPawn] = numPieces[capturedPiece];
                 numPieces[capturedPiece]++;
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(capturedPiece,squareOfCapturedPawn);
+
+                capturedPiece = Move.getCapturedPieceFromMove(move);
             }
             case Type.doublePawnMove -> {
                 colorIndexBoard[colorIndex][fromSquare] = index;
                 pieceSquareList[movingPiece][index] = fromSquare;
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
             }
             case Type.castles -> {
                 colorIndexBoard[colorIndex][fromSquare] = index;
@@ -514,24 +582,40 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                         movingPiece = (byte) (colorIndex*8 | Type.Rook);
                         colorIndexBoard[colorIndex][7] = index;
                         pieceSquareList[movingPiece][index] = 7;
+
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Rook, 7);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Rook, 5);
                     }
                     case 2-> {//white castles long
                         index = colorIndexBoard[colorIndex][3];
                         movingPiece = (byte) (colorIndex*8 | Type.Rook);
                         colorIndexBoard[colorIndex][0] = index;
                         pieceSquareList[movingPiece][index] = 0;
+
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Rook, 0);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Rook, 3);
                     }
                     case 62-> {//black castles short
                         index = colorIndexBoard[colorIndex][61];
                         movingPiece = (byte) (colorIndex*8 | Type.Rook);
                         colorIndexBoard[colorIndex][63] = index;
                         pieceSquareList[movingPiece][index] = 63;
+
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Black | Type.Rook, 63);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Black | Type.Rook, 61);
                     }
                     case 58-> {//black castles long
                         index = colorIndexBoard[colorIndex][59];
                         movingPiece = (byte) (colorIndex*8 | Type.Rook);
                         colorIndexBoard[colorIndex][56] = index;
                         pieceSquareList[movingPiece][index] = 56;
+
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, toSquare);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Black | Type.Rook, 56);
+                        zobristKey ^= Zobrist.getKeyFromPieceAndSquare(Type.Black | Type.Rook, 59);
                     }
                 }
             }
@@ -549,6 +633,10 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 pieceSquareList[piecePromotedFrom][numPieces[piecePromotedFrom]] = fromSquare;
                 colorIndexBoard[colorIndex][fromSquare] = numPieces[piecePromotedFrom];
                 numPieces[piecePromotedFrom]++;
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, fromSquare);//removes the mistaken zobrist key edit, moving piece was incorrect
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(colorPromoting | Type.Pawn, fromSquare);
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(colorPromoting | Type.Queen, toSquare);
             }
             case Type.pawnPromotesToN -> {
                 byte colorPromoting = (byte) (colorIndex*8);
@@ -564,6 +652,10 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 pieceSquareList[piecePromotedFrom][numPieces[piecePromotedFrom]] = fromSquare;
                 colorIndexBoard[colorIndex][fromSquare] = numPieces[piecePromotedFrom];
                 numPieces[piecePromotedFrom]++;
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, fromSquare);//removes the mistaken zobrist key edit, moving piece was incorrect
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(colorPromoting | Type.Pawn, fromSquare);
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(colorPromoting | Type.Knight, toSquare);
             }
             case Type.pawnPromotesToB -> {
                 byte colorPromoting = (byte) (colorIndex*8);
@@ -579,6 +671,10 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 pieceSquareList[piecePromotedFrom][numPieces[piecePromotedFrom]] = fromSquare;
                 colorIndexBoard[colorIndex][fromSquare] = numPieces[piecePromotedFrom];
                 numPieces[piecePromotedFrom]++;
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, fromSquare);//removes the mistaken zobrist key edit, moving piece was incorrect
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(colorPromoting | Type.Pawn, fromSquare);
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(colorPromoting | Type.Bishop, toSquare);
             }
             case Type.pawnPromotesToR -> {
                 byte colorPromoting = (byte) (colorIndex*8);
@@ -594,9 +690,12 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
                 pieceSquareList[piecePromotedFrom][numPieces[piecePromotedFrom]] = fromSquare;
                 colorIndexBoard[colorIndex][fromSquare] = numPieces[piecePromotedFrom];
                 numPieces[piecePromotedFrom]++;
+
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(movingPiece, fromSquare);//removes the mistaken zobrist key edit, moving piece was incorrect
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(colorPromoting | Type.Pawn, fromSquare);
+                zobristKey ^= Zobrist.getKeyFromPieceAndSquare(colorPromoting | Type.Rook, toSquare);
             }
         }
-        byte capturedPiece = Move.getCapturedPieceFromMove(move);
 
         if (capturedPiece !=0) {
             colorIndex ^=1;
@@ -734,12 +833,16 @@ public class Position {//TODO: get rid of unnecessary methods and put them in an
         }
 
         whiteToMove= !whiteToMove;
+        moveNumber--;
         enPassantTargetFiles= PreviousEnPassantTargetFiles.pop();
         castlingRights= PreviousCastlingRights.pop();
         hundredHalfmoveTimer= PreviousHalfMoveTimers.pop();
         legalMoves= PreviousMovelists.pop();
         indexOfFirstEmptyMove= PreviousIndexOfFirstEmptyMove.pop();
         gameState = calculateGameState();
+
+        zobristKey ^= Zobrist.getKeyFromCastlingRights(castlingRights);
+        zobristKey ^= Zobrist.getKeyFromEPFile(enPassantTargetFiles);
     }
     public void calculatePreCalculatedData() {//finds piece locations, piece attacks, pins, and checks
         calculatePieceLocations();

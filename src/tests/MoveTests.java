@@ -4,6 +4,7 @@ import ChessUtilities.Util;
 import position.Position;
 import position.CurrentPosition;
 import move.Move;
+import position.Zobrist;
 
 public class MoveTests {
 
@@ -150,11 +151,11 @@ public class MoveTests {
         int nodesFound = MoveTests.testNumPositions(temp, depth);
         long duration = (System.nanoTime()-startingTime)/1000000;
 
-
-        boolean testPassed = nodesFound==targetNodes;
+        long correctZobristKey = Zobrist.getZobristKeyFromPosition(temp.whiteToMove,temp.castlingRights,temp.enPassantTargetFiles,temp.squareCentricPos);
+        boolean testPassed = nodesFound==targetNodes && correctZobristKey == temp.zobristKey;
 
         if(testPassed)System.out.println("MoveTest "+moveTestNumber+" Nodes: "+targetNodes+" = "+nodesFound+" PASS  "+duration+" ms");
-        else System.out.println("fen: "+fen+" Nodes: "+targetNodes+" = "+nodesFound+" FAIL  ");
+        else System.out.println("fen: "+fen+" Nodes: "+targetNodes+" = "+nodesFound+" FAIL  else zobrist keys don't match");
     }
 
     public static void testTestPosition(Position pos, int depth, long targetNodes) {
@@ -162,14 +163,12 @@ public class MoveTests {
         int nodesFound = MoveTests.testNumPositions(pos, depth);
         long duration = (System.nanoTime()-startingTime)/1000000;
 
-
-        boolean testPassed = nodesFound==targetNodes;
+        long correctZobristKey = Zobrist.getZobristKeyFromPosition(pos.whiteToMove,pos.castlingRights,pos.enPassantTargetFiles,pos.squareCentricPos);
+        boolean testPassed = nodesFound==targetNodes && correctZobristKey == pos.zobristKey;
 
         if(testPassed)System.out.println("Depth: "+depth+" Nodes: "+targetNodes+" = "+nodesFound+" PASS  "+duration+" ms");
-        else System.out.println("fen: "+pos.getFen()+" Nodes: "+targetNodes+" =/= "+nodesFound+" FAIL  ");
+        else System.out.println("fen: "+pos.getFen()+" Nodes: "+targetNodes+" =/= "+nodesFound+" FAIL  or "+correctZobristKey+" =/= "+pos.zobristKey);
     }
-
-
 
 
     private static long sumOfNodes(int maxNodeIndex) {
