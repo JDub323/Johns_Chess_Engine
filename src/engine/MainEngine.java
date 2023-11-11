@@ -20,8 +20,7 @@ public class MainEngine {
         CurrentPosition.updateMoveMakers();
 
 
-
-        //MoveTests.testAllTestPositions();
+        MoveTests.testAllTestPositions();
         //MoveTests.testInitialPosition(5);
         //Move tempMove = new Move (Type.Empty,"a6","a7",Type.Empty);
         //MoveTests.testTestPositionAndShowNodes("8/8/4k3/8/2p5/8/B2P2K1/8 w - - 0 1",6);
@@ -29,7 +28,7 @@ public class MainEngine {
     }
 
     public static void startPosition() {
-        String startingPosition = "3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1";
+        String startingPosition = "8/8/4k3/8/2p5/8/B2P2K1/8 w - - 0 1";
         CurrentPosition.InitializePosition(startingPosition,true,true, 1000);
         //Normal starting position: rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
     }
