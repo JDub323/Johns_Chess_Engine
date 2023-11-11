@@ -34,7 +34,7 @@ public class Position {
     public byte[] numPieces = new byte[15];
     public byte[][] colorIndexBoard = new byte[2][64];//0 for white, 1 for black
     public byte gameState;
-    public int moveNumber;
+    public int plyNumber;
     public long zobristKey;
 
     //additional useful variables in the position
@@ -67,6 +67,8 @@ public class Position {
 
     public int indexOfPin;
     public long pinnedPieces;
+
+    public long[] previousZobristKeys = new long[500];//theoretically, a game can go on up to 8,800 moves, but not realistic, so arbitrarily 500
 
     public Position(String fen) {
         int indexOfFirstSpace= fen.indexOf(' ');
@@ -151,12 +153,13 @@ public class Position {
 
         String moveClocks = fen.substring(endOfFen-3,endOfFen);
         hundredHalfmoveTimer= Integer.parseInt(moveClocks.substring(0,1));
-        moveNumber= Integer.parseInt(moveClocks.substring(2,3));
+        plyNumber = Integer.parseInt(moveClocks.substring(2,3));
 
         calculatePreCalculatedData();
         calculateLegalMoves();
 
         zobristKey = Zobrist.getZobristKeyFromPosition(whiteToMove,castlingRights,enPassantTargetFiles,squareCentricPos);
+        previousZobristKeys[0] = zobristKey;
     }
     public Position(long[] PieceArray, byte[] squareCentricPos, boolean whiteToMove) {
         System.arraycopy(squareCentricPos, 0, this.squareCentricPos, 0, 64);
@@ -170,12 +173,6 @@ public class Position {
     public void makeMove(int move) {
         quietlyMakeMove(move);
         calculatePreCalculatedData();
-
-        /*
-        long correctZobristKey = Zobrist.getZobristKeyFromPosition(whiteToMove,castlingRights,enPassantTargetFiles,squareCentricPos);
-        System.out.println("Correct Zobrist Key: "+correctZobristKey+" Actual Zobrist Key: "+zobristKey);
-
-         */
     }
     private void quietlyMakeMove(int move) {//TODO: make only one switch case, not two
         PreviousMadeMoves.push(move);
@@ -184,6 +181,7 @@ public class Position {
         PreviousHalfMoveTimers.push(hundredHalfmoveTimer);
         PreviousMovelists.push(Util.cloneArray(legalMoves, indexOfFirstEmptyMove));
         PreviousIndexOfFirstEmptyMove.push(indexOfFirstEmptyMove);
+        previousZobristKeys[plyNumber] = zobristKey;
 
         byte fromSquare = Move.getFromSquareFromMove(move);
         byte toSquare = Move.getToSquareFromMove(move);
@@ -527,7 +525,7 @@ public class Position {
         zobristKey ^= Zobrist.getKeyFromEPFile(enPassantTargetFiles);
 
         indexOfFirstEmptyMove=0;
-        moveNumber++;
+        plyNumber++;
     }
     public void unmakeMove(int move) {
         byte fromSquare = Move.getFromSquareFromMove(move);
@@ -833,7 +831,7 @@ public class Position {
         }
 
         whiteToMove= !whiteToMove;
-        moveNumber--;
+        plyNumber--;
         enPassantTargetFiles= PreviousEnPassantTargetFiles.pop();
         castlingRights= PreviousCastlingRights.pop();
         hundredHalfmoveTimer= PreviousHalfMoveTimers.pop();
@@ -1193,7 +1191,7 @@ public class Position {
             generateKingCapturesOnly(pieceSquareList[colorToFindMovesFor | Type.King][i]);
         }
     }
-    public byte calculateGameState() {//TODO: add draw by repitition
+    public byte calculateGameState() {
         if (indexOfFirstEmptyMove==0) {
             if (inCheck) {
                 if (whiteToMove)return Type.whiteIsCheckmated;
@@ -1204,6 +1202,13 @@ public class Position {
 
         if (hundredHalfmoveTimer>=100)return Type.gameIsADraw;//fifty-move rule draw
 
+        if (hundredHalfmoveTimer > 10) {//no possibility of a draw before 10 reversible plies are made
+            int numRepititions=0;
+            for (int i = plyNumber; i > plyNumber-hundredHalfmoveTimer; i--) {
+                if (previousZobristKeys[i] == zobristKey)numRepititions++;
+            }
+            if (numRepititions >= 2)return Type.gameIsADraw;//the third repetition being the current position
+        }
 
         int whitePieceCount = numPieces[Type.Knight] + numPieces[Type.Bishop] + numPieces[Type.Rook] + numPieces[Type.Queen];
         int blackPieceCount = numPieces[Type.Black | Type.Knight] + numPieces[Type.Black | Type.Bishop] + numPieces[Type.Black | Type.Rook] + numPieces[Type.Black | Type.Queen];
