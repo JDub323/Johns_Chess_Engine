@@ -42,6 +42,8 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
             mousex=e.getX();
             mousey=e.getY();
             Graphical.pickUpPiece((byte)getSquareFromXY(mousex,mousey));
+            Graphical.previousSelectedSquare = Graphical.selectedSquare;
+            Graphical.selectedSquare = (byte)getSquareFromXY(mousex,mousey);
             repaint();
         }
         mouseIsDown=true;
@@ -96,6 +98,10 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
         else if (e.getKeyChar() == 'b') promotionMoveType = position.Type.pawnPromotesToB;
         else if (e.getKeyChar() == 'r') promotionMoveType = position.Type.pawnPromotesToR;
     }
+    @Override
+    public void mouseClicked(MouseEvent e) {
+        Graphical.clickPiece();
+    }
 
     public int getSquareFromXY(int x, int y) {
         return 8*(7-y/56)+x/56;
@@ -116,8 +122,6 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
     public void mouseEntered(MouseEvent e) {}
     @Override
     public void mouseExited(MouseEvent e) {}
-    @Override
-    public void mouseClicked(MouseEvent e) {}
     @Override
     public void keyPressed(KeyEvent e) {}
     @Override

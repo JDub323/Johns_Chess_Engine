@@ -12,6 +12,8 @@ public class Graphical extends JPanel{
     final int PANEL_WIDTH = 448;
     final int PANEL_HEIGHT = 448;
     public static byte pickedUpPiece = Type.Empty;
+    public static byte selectedSquare = -1;
+    public static byte previousSelectedSquare = -1;
     public static byte[] graphicSquareCentricPos = new byte[64];
     public static byte fromSquare=0,toSquare=0;
     public static boolean stopAllMoves;
@@ -26,7 +28,7 @@ public class Graphical extends JPanel{
         DrawPieces.drawBoard(g);
         drawPosition(g,graphicSquareCentricPos);
         drawPickedUpPiece(g, pickedUpPiece);
-        drawSquaresFromBitboard(g,MoveTests.getToSquaresFromMoveList(CurrentPosition.position,fromSquare));
+        drawSquaresFromBitboard(g,MoveTests.getToSquaresFromMoveList(CurrentPosition.position,selectedSquare));
     }
 
     public void drawPosition(Graphics g, byte[] scp) {
@@ -88,7 +90,6 @@ public class Graphical extends JPanel{
         }
         fromSquare=square;
     }
-
     public static void putDownPiece(byte square) {
         toSquare=square;
 
@@ -125,10 +126,43 @@ public class Graphical extends JPanel{
         }
         else if (pickedUpPiece != Type.Empty)returnPiece();
     }
-
     public static void returnPiece() {
         graphicSquareCentricPos[fromSquare]=pickedUpPiece;
         pickedUpPiece= Type.Empty;
+    }
+
+    public static void clickPiece() {
+            int temp = Move.makeMoveFromBytes(Type.Empty,previousSelectedSquare,selectedSquare,Type.Empty);
+            boolean moveListContainsFromSquareToSquare=false;
+            int indexOfMoveFound=-1;
+
+            for (int i = 0; i<CurrentPosition.position.indexOfFirstEmptyMove; i++) {
+                if ((Move.fromSquareToSquareMask & CurrentPosition.position.legalMoves[i]) == temp) {//only take into account from/toSquare
+                    moveListContainsFromSquareToSquare=true;
+                    indexOfMoveFound=i;
+
+                    if (Move.getMoveTypeFromMove(CurrentPosition.position.legalMoves[i]) == Type.pawnPromotesToQ) {
+                        //find index of piece promoting to from fromSquare, toSquare, moveType
+                        int tempMove = Move.makeMoveFromBytes(MyFrame.getPromotionMoveType(),previousSelectedSquare,selectedSquare, Type.Empty);
+
+                        for (int j = 0; j<CurrentPosition.position.indexOfFirstEmptyMove; j++) {
+                            if (CurrentPosition.position.legalMoves[j] == tempMove) {
+                                indexOfMoveFound=j;
+                                break;
+                            }
+                        }
+                    }
+                    break;//if not a pawn promotion
+                }
+            }
+
+            if (moveListContainsFromSquareToSquare && !stopAllMoves) {
+                CurrentPosition.position.makeMove(CurrentPosition.position.legalMoves[indexOfMoveFound]);
+                CurrentPosition.position.calculateLegalMoves();
+                CurrentPosition.updateMoveMakers();
+                System.arraycopy(CurrentPosition.position.squareCentricPos,0,graphicSquareCentricPos,0,64);
+                selectedSquare = -1;
+            }
     }
 
     public static void drawSquaresFromBitboard(Graphics g, long input) {
@@ -136,19 +170,6 @@ public class Graphical extends JPanel{
         for (int i=0;i<64;i++) {
             if (((square<<i)|input)==input && !CurrentPosition.botPlaysForColorToMove()) {
                 DrawPieces.drawTarget(g,i);
-            }
-        }
-
-    }
-
-    public static void drawUglyRedDotsFromBitboard(Graphics g, long input) {
-        long square=1;
-        for (int i=0;i<64;i++) {
-            if (((square<<i)|input)==input && !CurrentPosition.botPlaysForColorToMove()) {
-                int x=(i%8)*56;
-                int y=(7-(i)/8)*56;
-                g.setColor(Color.red);
-                g.fillOval(x+10,y+10,36,36);
             }
         }
     }
