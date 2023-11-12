@@ -30,7 +30,7 @@ public class MoveMaker implements Runnable{
 
     private void makeBestMove(int move) {
         if (move != Type.illegalMove) {
-            pos.makeMove(move);
+            CurrentPosition.makeMove(move);
             pos.calculateLegalMoves();
         }
     }

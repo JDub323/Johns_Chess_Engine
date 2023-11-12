@@ -9,13 +9,16 @@ import java.lang.reflect.Array;
 public class EvaluationTests {//TODO: add more evaluation tests to quickly make sure I didn't break my code by adding something
 
     private static final String[] MGTestPositions = {
-            "r1bq1br1/ppppk1p1/5p2/4pQp1/3P4/4K3/PPP1PPPP/RN3B1R w - - 0 5"
+            "r1bq1br1/ppppk1p1/5p2/4pQp1/3P4/4K3/PPP1PPPP/RN3B1R w - - 0 5",
+            "r1bqkb1r/pppppppp/2n5/8/3P1n2/4PN2/PPP2PPP/RN1QKB1R w KQkq - 0 9"
     };
     private static final int[] MGStockfishEval = {
-            -112
+            -112,
+            20
     };
     private static final String[] MGStockfishBestMove = {
-            "d4d5"
+            "d4d5",
+            "e3f4"
     };
 
     private static final String[] EGTestPositions = {
@@ -59,7 +62,7 @@ public class EvaluationTests {//TODO: add more evaluation tests to quickly make 
         int bestMove = evaluator.bestMove;
         int eval = evaluator.bestEval;
 
-        System.out.println("Position "+positionNumber+" scores: "+eval+" after move: "+ Move.getStringFromMove(bestMove) + " with alpha beta");
+        System.out.println("Position "+positionNumber+" scores: "+eval+" after move: "+ Move.getStringFromMove(bestMove));
     }
 
     public static void testEvalOfMove(String positionFen, String move, int depth) {

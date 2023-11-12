@@ -99,14 +99,16 @@ public class MoveTests {
         int numPositions=0;
 
         for (int i=0;i<pos.indexOfFirstEmptyMove;i++) {
+            int moveToMake = pos.legalMoves[i];
 
-            pos.makeMove(pos.legalMoves[i]);
+            pos.makeMove(moveToMake);
             pos.calculateLegalMoves();
             numPositions += testNumPositions(pos,depth-1);
-            pos.unmakeMove( pos.PreviousMadeMoves.pop() );
+            pos.unmakeMove(moveToMake);
         }
         return numPositions;
     }
+
 
     public static void testMovesAndShowNodes(Position pos, int depth) {
         int workingTotal=0;
@@ -119,7 +121,7 @@ public class MoveTests {
             int nodes = MoveTests.testNumPositions(pos, depth-1);
             System.out.println("----"+nodes);
             workingTotal+=nodes;
-            pos.unmakeMove( pos.PreviousMadeMoves.pop() );
+            pos.unmakeMove(testingMove);
         }
         System.out.println("Total nodes searched: "+workingTotal);
     }
@@ -148,7 +150,7 @@ public class MoveTests {
         Position temp = new Position(fen);
 
         long startingTime = System.nanoTime();
-        int nodesFound = MoveTests.testNumPositions(temp, depth);
+        int nodesFound = testNumPositions(temp, depth);
         long duration = (System.nanoTime()-startingTime)/1000000;
 
         long correctZobristKey = Zobrist.getZobristKeyFromPosition(temp.whiteToMove,temp.castlingRights,temp.enPassantTargetFiles,temp.squareCentricPos);
@@ -168,6 +170,26 @@ public class MoveTests {
 
         if(testPassed)System.out.println("Depth: "+depth+" Nodes: "+targetNodes+" = "+nodesFound+" PASS  "+duration+" ms");
         else System.out.println("fen: "+pos.getFen()+" Nodes: "+targetNodes+" =/= "+nodesFound+" FAIL  or "+correctZobristKey+" =/= "+pos.zobristKey);
+    }
+
+    public static boolean pieceListsAreAccurate(Position pos) {
+        Position pos2 = new Position(pos.getFen());
+
+        for (int i=1;i<7;i++) {
+            for (int color = 0; color<=8; color+=8) {
+                if (pos.numPieces[color | i] != pos2.numPieces[color | i])return false;
+
+                int sum1=0,sum2=0;
+
+                for (int j=0;j<pos.numPieces[color | i];j++) {
+                    sum1+=pos.pieceSquareList[color | i][j];
+                    sum2+=pos2.pieceSquareList[color | i][j];
+                }
+                if (sum1 != sum2)return false;
+            }
+        }
+
+        return true;
     }
 
 

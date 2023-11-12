@@ -83,7 +83,7 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
         }
         else if (e.getKeyChar() == 'u') {
             try {
-                CurrentPosition.position.unmakeMove( CurrentPosition.position.PreviousMadeMoves.pop() );
+                CurrentPosition.unmakeMove();
                 System.arraycopy(CurrentPosition.position.squareCentricPos, 0, Graphical.graphicSquareCentricPos, 0, 64);
                 CurrentPosition.updateMoveMakers();
                 repaint();
@@ -92,7 +92,10 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
                 System.out.println("ERROR: cannot unmake no moves");
             }
         }
+        else if (e.getKeyChar() == 'p'){
+            CurrentPosition.position.printFen();
 
+        }
         else if (e.getKeyChar() == 'q') promotionMoveType = position.Type.pawnPromotesToQ;
         else if (e.getKeyChar() == 'n') promotionMoveType = position.Type.pawnPromotesToN;
         else if (e.getKeyChar() == 'b') promotionMoveType = position.Type.pawnPromotesToB;

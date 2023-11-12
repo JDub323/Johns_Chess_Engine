@@ -38,7 +38,6 @@ public class Position {
     public long zobristKey;
 
     //additional useful variables in the position
-    public Stack<Integer> PreviousMadeMoves = new Stack<>();
     public Stack<Integer> PreviousEnPassantTargetFiles = new Stack<>();
     public Stack<Integer> PreviousHalfMoveTimers = new Stack<>();
     public Stack<Long> PreviousCastlingRights = new Stack<>();
@@ -120,8 +119,12 @@ public class Position {
         if (fenWithoutPosition.contains("k"))castlingRights |= Type.blackCanCS;
         if (fenWithoutPosition.contains("q"))castlingRights |= Type.blackCanCL;
 
-        String epTargetSquare = fen.substring(fen.length()-6,fen.length()-5);
-        if (!epTargetSquare.equals(" "))enPassantTargetFiles= switch (epTargetSquare) {
+        int indexOfLastSpace = fen.lastIndexOf(" ");
+        int indexOfSecondToLastSpace = fen.substring(0,indexOfLastSpace).lastIndexOf(" ");
+        int indexOfMiddleSpace = fen.substring(0,indexOfSecondToLastSpace).lastIndexOf(" ");
+
+        String epTargetSquare = fen.substring(indexOfMiddleSpace+1, indexOfMiddleSpace+2);
+        enPassantTargetFiles= switch (epTargetSquare) {
             case "a"-> {
                 yield 1<<0;
             }
@@ -146,14 +149,16 @@ public class Position {
             case "h"-> {
                 yield 1<<7;
             }
-            default -> {
+            case "-"-> {
+                yield 0;
+            }
+            default -> {//should never be called
                 yield -1;
             }
         };
 
-        String moveClocks = fen.substring(endOfFen-3,endOfFen);
-        hundredHalfmoveTimer= Integer.parseInt(moveClocks.substring(0,1));
-        plyNumber = Integer.parseInt(moveClocks.substring(2,3));
+        hundredHalfmoveTimer= Integer.parseInt(fen.substring(indexOfSecondToLastSpace+1,indexOfLastSpace));
+        plyNumber = Integer.parseInt(fen.substring(indexOfLastSpace+1,endOfFen));
 
         calculatePreCalculatedData();
         calculateLegalMoves();
@@ -167,15 +172,11 @@ public class Position {
         this.whiteToMove=whiteToMove;
     }
 
-    //TODO: fix a probable bug in the way castling works with piece lists
-    //I sometimes get huge error messages when I castling is legal or when I move a King
-    //Find out if the bug only exists in quiescence eval
     public void makeMove(int move) {
         quietlyMakeMove(move);
         calculatePreCalculatedData();
     }
     private void quietlyMakeMove(int move) {//TODO: make only one switch case, not two
-        PreviousMadeMoves.push(move);
         PreviousCastlingRights.push(castlingRights);
         PreviousEnPassantTargetFiles.push(enPassantTargetFiles);
         PreviousHalfMoveTimers.push(hundredHalfmoveTimer);
@@ -1867,8 +1868,7 @@ public class Position {
             }
         }
 
-        fen+=" "+hundredHalfmoveTimer+" ";
-        fen+=0;//not keeping track of the move timer
+        fen+=" "+hundredHalfmoveTimer+" "+plyNumber;
         return fen;
     }
 }

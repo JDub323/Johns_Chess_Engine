@@ -22,6 +22,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
     public void run() {
         //make a new position that is a copy of the old one
         Position pos= new Position(CurrentPosition.position.getFen());//probably too slow, def a way to make faster
+        System.arraycopy(CurrentPosition.position.previousZobristKeys, 0, pos.previousZobristKeys, 0, pos.plyNumber);
 
         //in the future, would like to make time constant and variable depth
         //right now this is the other way around
