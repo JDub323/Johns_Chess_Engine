@@ -94,7 +94,6 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
         }
         else if (e.getKeyChar() == 'p'){
             CurrentPosition.position.printFen();
-
         }
         else if (e.getKeyChar() == 'q') promotionMoveType = position.Type.pawnPromotesToQ;
         else if (e.getKeyChar() == 'n') promotionMoveType = position.Type.pawnPromotesToN;
