@@ -1,6 +1,6 @@
 package tests;
 
-import ChessUtilities.Util;
+import chessUtilities.Util;
 import position.Position;
 import position.CurrentPosition;
 import move.Move;
@@ -57,10 +57,12 @@ public class MoveTests {
 
         testTestPosition("8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1", 4, 23527,23);
 
+        testTestPosition("r1bk2nr/pppP1p1p/5qp1/8/8/4PN2/P4PPP/bN1QKB1R w K - 0 21", 4, 1415769,24);
+
 
         long duration = (System.nanoTime() -startingTime)/1000000;
         duration -= 184;//to account for the time it takes to make the new positions
-        int totalNodes = 13931366;
+        int totalNodes = 15347135;
         long nodesPerSecond= totalNodes* 1000L /(duration);
         System.out.println("\nNodes Per Second: "+nodesPerSecond);
     }
@@ -79,7 +81,7 @@ public class MoveTests {
         System.out.println("\nNodes Per Second: "+nodesPerSecond);
     }
 
-    private static final long[] targetNodes = {1,20,400,8902,197281,4865609,119060324,3195901860L,84998978956L,2439530234167L,69352859712417L};
+
 
 
 
@@ -192,6 +194,8 @@ public class MoveTests {
         return true;
     }
 
+
+    private static final long[] targetNodes = {1,20,400,8902,197281,4865609,119060324,3195901860L,84998978956L,2439530234167L,69352859712417L};
 
     private static long sumOfNodes(int maxNodeIndex) {
         if (maxNodeIndex==0) return targetNodes[0];

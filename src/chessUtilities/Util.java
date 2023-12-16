@@ -1,4 +1,4 @@
-package ChessUtilities;
+package chessUtilities;
 
 import move.Move;
 import position.Type;
@@ -91,9 +91,25 @@ public class Util {
 
     public static long toBitboard(int x) {return 1L<<x;}
 
+    public static int kingDistanceBetween(int a, int b) {
+        int fileDistance = Math.abs(a%8 - b%8);
+        int rankDistance = Math.abs(a/8 - b/8);
+        return Math.max(fileDistance, rankDistance);
+    }
+
+    public static int manhattanDistanceFromCenter(int s) {
+        int file = s%8;
+        int rank = s/8;
+
+        int fileDistance = Math.max(3-file,file-4);
+        int rankDistance = Math.max(3-rank,rank-4);
+
+        return fileDistance + rankDistance;
+    }
+
     public static void printMoveArray(int[] moveArray) {
         for (int j : moveArray) {
-            System.out.print(Move.getStringFromMove(j) + " | ");
+            System.out.print(Move.getStandardStringFromMove(j) + " | ");
         }
         System.out.println();
     }

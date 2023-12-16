@@ -1,6 +1,6 @@
 package position;
 
-import ChessUtilities.Util;
+import chessUtilities.Util;
 
 import java.security.SecureRandom;
 

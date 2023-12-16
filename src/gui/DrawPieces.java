@@ -9,6 +9,13 @@ public class DrawPieces
     private final static Color darkSquare = new Color(80,79,125);
     private final static Color lightSquareBorder = new Color(197,205,220);
     private final static Color darkSquareBorder = new Color(70,69,115);
+    private final static Color highlightedLightSquare = new Color(228, 230, 207);
+    private final static Color highlightedDarkSquare = new Color(164, 154, 104);
+    private final static Color highlightedLightSquareBorder = new Color(219, 220, 197);
+    private final static Color highlightedDarkSquareBorder = new Color(154, 152, 94);
+
+    private final static Color target = new Color(180, 180, 192);
+    private final static Color targetBorder = new Color(157, 157, 166);
 
     private final static Color pBlack = new Color(58,63,82);
     private final static Color wpLightGray = new Color(207,207,214);
@@ -40,6 +47,25 @@ public class DrawPieces
             g.fillRect(x+4,y+4,48,48);
         }
     }
+    private static void drawHighlightedSquare(Graphics g, int square) {
+        int file = square%8;
+        int rank = 7-square/8;
+        boolean isLight = (rank+file)%2==0;
+        int x = file*56;
+        int y = rank*56;
+        if (isLight) {
+            g.setColor(highlightedLightSquareBorder);
+            g.fillRect(x,y,56,56);
+            g.setColor(highlightedLightSquare);
+            g.fillRect(x+4,y+4,48,48);
+        }
+        else {
+            g.setColor(highlightedDarkSquareBorder);
+            g.fillRect(x,y,56,56);
+            g.setColor(highlightedDarkSquare);
+            g.fillRect(x+4,y+4,48,48);
+        }
+    }
     public static void drawBoard(Graphics g) {
         for (int rank=0;rank<8;rank++) {
             for (int file=0;file<8;file++){
@@ -52,13 +78,17 @@ public class DrawPieces
         int x=(square%8)*56;
         int y=(7-(square)/8)*56;
 
-        g.setColor(new Color(177,185,200));
+        g.setColor(targetBorder);
         g.fillRect(x+18,y+18,20,20);
-        g.setColor(new Color(187,195,210));
+        g.setColor(target);
         g.fillRect(x+22,y+22,12,12);
 
 
 
+    }
+    public static void drawHighlightedSquares(Graphics g, int square1, int square2) {
+        drawHighlightedSquare(g,square1);
+        drawHighlightedSquare(g,square2);
     }
 
     public static void drawKnight(Graphics g, int square, boolean isWhite) {

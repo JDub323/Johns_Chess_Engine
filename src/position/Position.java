@@ -1,10 +1,11 @@
 package position;
 
 import eval.StaticEval;
+import move.MagicBitboards;
 import move.Move;
 import move.PieceAttack;
 import java.util.Stack;
-import ChessUtilities.Util;
+import chessUtilities.Util;
 
 
 public class Position {
@@ -42,7 +43,7 @@ public class Position {
     public Stack<Integer> PreviousHalfMoveTimers = new Stack<>();
     public Stack<Long> PreviousCastlingRights = new Stack<>();
     public Stack<int[]> PreviousMovelists = new Stack<int[]>();
-    public Stack<Integer> PreviousIndexOfFirstEmptyMove = new Stack<>();
+    public Stack<Integer> PreviousIndexOfFirstEmptyMove = new Stack<>();//TODO: fix this on unmake move, doesn't work rn
 
     public long whiteAttacksArray[] = new long[7];
     public long whiteAttacks;
@@ -159,12 +160,12 @@ public class Position {
 
         hundredHalfmoveTimer= Integer.parseInt(fen.substring(indexOfSecondToLastSpace+1,indexOfLastSpace));
         plyNumber = Integer.parseInt(fen.substring(indexOfLastSpace+1,endOfFen));
+        zobristKey = Zobrist.getZobristKeyFromPosition(whiteToMove,castlingRights,enPassantTargetFiles,squareCentricPos);
 
         calculatePreCalculatedData();
         calculateLegalMoves();
 
-        zobristKey = Zobrist.getZobristKeyFromPosition(whiteToMove,castlingRights,enPassantTargetFiles,squareCentricPos);
-        previousZobristKeys[0] = zobristKey;
+        previousZobristKeys[plyNumber] = zobristKey;
     }
     public Position(long[] PieceArray, byte[] squareCentricPos, boolean whiteToMove) {
         System.arraycopy(squareCentricPos, 0, this.squareCentricPos, 0, 64);
@@ -838,10 +839,11 @@ public class Position {
         hundredHalfmoveTimer= PreviousHalfMoveTimers.pop();
         legalMoves= PreviousMovelists.pop();
         indexOfFirstEmptyMove= PreviousIndexOfFirstEmptyMove.pop();
-        gameState = calculateGameState();
 
         zobristKey ^= Zobrist.getKeyFromCastlingRights(castlingRights);
         zobristKey ^= Zobrist.getKeyFromEPFile(enPassantTargetFiles);
+
+        calculatePreCalculatedData();
     }
     public void calculatePreCalculatedData() {//finds piece locations, piece attacks, pins, and checks
         calculatePieceLocations();
@@ -856,7 +858,7 @@ public class Position {
     }
     public void calculateCapturingMovesOnly() {//ALSO FINDS THE GAME STATE
         findLegalCapturingMoves();
-        gameState = calculateGameState();
+        gameState = calculateGameStateWhenOnlyCaptures();//is possible that the game state is incorrect, could be mate or stalemate
     }
 
     public void calculatePieceLocations() {
@@ -1007,7 +1009,6 @@ public class Position {
         if (whiteToMove) {
             long kingLocationBB = PieceArray[Type.King];
             int kingLocation = Long.numberOfTrailingZeros(kingLocationBB);
-            assert (kingLocation < 64);
 
             long rookPinners = PieceArray[Type.Black | Type.Queen] | PieceArray[Type.Black | Type.Rook];
             long bishopPinners = PieceArray[Type.Black | Type.Queen] | PieceArray[Type.Black | Type.Bishop];
@@ -1195,20 +1196,54 @@ public class Position {
     public byte calculateGameState() {
         if (indexOfFirstEmptyMove==0) {
             if (inCheck) {
-                if (whiteToMove)return Type.whiteIsCheckmated;
+                if (whiteToMove){
+                    return Type.whiteIsCheckmated;
+                }
                 return Type.blackIsCheckmated;
             }
             return Type.gameIsADraw;//stalemate
         }
 
-        if (hundredHalfmoveTimer>=100)return Type.gameIsADraw;//fifty-move rule draw
+        if (hundredHalfmoveTimer>=100) {
+            return Type.gameIsADraw;//fifty-move rule draw
+        }
 
         if (hundredHalfmoveTimer > 10) {//no possibility of a draw before 10 reversible plies are made
             int numRepititions=0;
             for (int i = plyNumber; i > plyNumber-hundredHalfmoveTimer; i--) {
                 if (previousZobristKeys[i] == zobristKey)numRepititions++;
             }
-            if (numRepititions >= 2)return Type.gameIsADraw;//the third repetition being the current position
+            if (numRepititions >= 2){
+                return Type.gameIsADraw;//the third repetition being the current position
+            }
+        }
+
+        int whitePieceCount = numPieces[Type.Knight] + numPieces[Type.Bishop] + numPieces[Type.Rook] + numPieces[Type.Queen];
+        int blackPieceCount = numPieces[Type.Black | Type.Knight] + numPieces[Type.Black | Type.Bishop] + numPieces[Type.Black | Type.Rook] + numPieces[Type.Black | Type.Queen];
+        //if there are 3 or fewer pieces for each color, then it is the endGame
+        if (whitePieceCount >= 3 && blackPieceCount >= 3)return Type.midGame;
+
+        //check for draw by insufficient material after checking pieceCount>3, since it can only occur with fewer than 3 pieces on the board
+        int numHeavyPiecesAndPawns = numPieces[Type.Rook] + numPieces[Type.Queen] + numPieces[Type.Pawn] + numPieces[Type.Black | Type.Rook] + numPieces[Type.Black | Type.Queen] + numPieces[Type.Black | Type.Pawn];
+
+        if (StaticEval.gameIsDrawnByInsufficientMaterial(numHeavyPiecesAndPawns, numPieces[Type.Knight], numPieces[Type.Bishop], numPieces[Type.Black | Type.Knight], numPieces[Type.Black | Type.Bishop])){
+            return Type.gameIsADraw;
+        }
+        return Type.endGame;
+    }
+    private byte calculateGameStateWhenOnlyCaptures() {
+        if (hundredHalfmoveTimer>=100) {
+            return Type.gameIsADraw;//fifty-move rule draw
+        }
+
+        if (hundredHalfmoveTimer > 10) {//no possibility of a draw before 10 reversible plies are made
+            int numRepititions=0;
+            for (int i = plyNumber; i > plyNumber-hundredHalfmoveTimer; i--) {
+                if (previousZobristKeys[i] == zobristKey)numRepititions++;
+            }
+            if (numRepititions >= 2){
+                return Type.gameIsADraw;//the third repetition being the current position
+            }
         }
 
         int whitePieceCount = numPieces[Type.Knight] + numPieces[Type.Bishop] + numPieces[Type.Rook] + numPieces[Type.Queen];
@@ -1230,9 +1265,43 @@ public class Position {
         }
         sortMoves();
     }
-
-    private int getMovePriority(int legalMove) {//priority of 1 is an estimated 100 centipawn gain, - 100 cp loss, etc
+    public void optimizeMoveOrder(int principalVariationBestMove) {
+        if (principalVariationBestMove != Type.illegalMove) {//slight speedup by making sure the move isn't empty before checking it dozens of times
+            for (int i=0;i<indexOfFirstEmptyMove;i++) {
+                legalMovePriorities[i] = getMovePriority(legalMoves[i], principalVariationBestMove);
+            }
+        }
+        else {
+            for (int i=0;i<indexOfFirstEmptyMove;i++) {
+                legalMovePriorities[i] = getMovePriority(legalMoves[i]);
+            }
+        }
+        sortMoves();
+    }
+    private int getMovePriority(int legalMove) {//priority of 1 is an estimated 100 centipawn gain, -1 is 100 cp loss, etc
         int movePriority = 0;
+
+        int fromSquare = Move.getFromSquareFromMove(legalMove);
+        int movingPiece = squareCentricPos[fromSquare]%8;//take mod 8 to make pieces Colorless
+        int capturedPiece = Move.getCapturedPieceFromMove(legalMove)%8;
+        long enemyPawnAttacks = whiteToMove ? blackAttacksArray[Type.Pawn] : whiteAttacksArray[Type.Pawn];
+
+        if (capturedPiece != 0)movePriority = 2 * capturedPiece - movingPiece;//prioritize capturing low value with high value
+
+        long toSquareBB = 1L<<Move.getToSquareFromMove(legalMove);
+        if ((toSquareBB | enemyPawnAttacks) == enemyPawnAttacks)movePriority -= movingPiece;//devalue moving to enemy pawn attacking squares
+
+        byte moveType = Move.getMoveTypeFromMove(legalMove);
+        if (moveType == Type.pawnPromotesToQ) movePriority+=9;//prioritize pawn promoting to queen
+        else if (moveType > 4) movePriority++;//other pawn promotion that isn't a queen
+
+
+        return movePriority;
+    }
+    private int getMovePriority(int legalMove, int principalVariationBestMove) {
+        int movePriority = 0;
+
+        if (legalMove == principalVariationBestMove)return 1000;//arbitrary large number to make it the highest priority
 
         int fromSquare = Move.getFromSquareFromMove(legalMove);
         int movingPiece = squareCentricPos[fromSquare]%8;//take mod 8 to make pieces Colorless
@@ -1303,6 +1372,12 @@ public class Position {
             indexOfFirstEmptyMove++;
             toSquareBB &= toSquareBB-1;
         }
+    }
+    public boolean moveIsOnMoveList(int target) {
+        for (int i = 0; i<indexOfFirstEmptyMove; i++) {
+            if (legalMoves[i] == target) return true;
+        }
+        return false;
     }
 
     public void generatePawnMoves(byte fromSquare) {//TODO: refactor this to make more optimal
@@ -1540,11 +1615,7 @@ public class Position {
         }
         return false;
     }//returns true if the square is on a pinRay and sets indexOfPin to which pin it is on
-    public long findCheckResolveRay(long kingLocation) {//TODO: MAKE FASTER
-        long tickerSquareBB;
-        long tempRAY=0;
-        long occupiedSquareBitboard= allPieces;
-        long relevantAttackers;
+    public long findCheckResolveRay(long kingLocation) {
         short friendlyColor;
         short enemyColor;
         if (whiteToMove) {
@@ -1563,81 +1634,47 @@ public class Position {
         long knightCheck = PieceAttack.generateKnightAttacks(kingLocation) & PieceArray[enemyColor | Type.Knight];
         if (knightCheck !=0)return knightCheck;
 
-        relevantAttackers= PieceArray[enemyColor | Type.Rook] | PieceArray[enemyColor | Type.Queen];
-        tickerSquareBB=kingLocation;
-        while ((tickerSquareBB | Constants.H_FILE) !=Constants.H_FILE) {
-            tickerSquareBB=tickerSquareBB<<1;
-            tempRAY|=tickerSquareBB;
-            if ((tickerSquareBB & relevantAttackers) !=0)return tempRAY;
-            if ((tickerSquareBB & occupiedSquareBitboard) !=0)break;
+        long relevantAttackers= PieceArray[enemyColor | Type.Rook] | PieceArray[enemyColor | Type.Queen];
+        byte kingSquare = pieceSquareList[friendlyColor | Type.King][0];
+
+        if (numPieces[enemyColor | Type.Queen] < 2) {//my numChecks variable is correct
+            for (int i=0; i<8; i+=2) {
+                long ray = PieceAttack.lookUpRookAttacks(kingSquare,allPieces) & PieceAttack.maskOfLineInDirection[i][kingSquare];
+                if ((ray & relevantAttackers) != 0) {
+                    return ray;
+                }
+            }
+            relevantAttackers= PieceArray[enemyColor | Type.Bishop] | PieceArray[enemyColor | Type.Queen];
+            for (int i=1; i<8; i+=2) {
+                long ray = PieceAttack.lookUpBishopAttacks(kingSquare,allPieces) & PieceAttack.maskOfLineInDirection[i][kingSquare];
+                if ((ray & relevantAttackers) != 0) {
+                    return ray;
+                }
+            }
+        }
+        else {//numChecks could be wrong
+            long tempRay=0;
+            byte numChecks=0;
+            for (int i=0; i<7; i+=2) {
+                long ray = PieceAttack.lookUpRookAttacks(kingSquare,allPieces) & PieceAttack.maskOfLineInDirection[i][kingSquare];
+                if ((ray & relevantAttackers) != 0) {
+                    tempRay = ray;
+                    numChecks++;
+                }
+            }
+            relevantAttackers= PieceArray[enemyColor | Type.Bishop] | PieceArray[enemyColor | Type.Queen];
+            for (int i=1; i<7; i+=2) {
+                long ray = PieceAttack.lookUpBishopAttacks(kingSquare,allPieces) & PieceAttack.maskOfLineInDirection[i][kingSquare];
+                if ((ray & relevantAttackers) != 0) {
+                    tempRay = ray;
+                    numChecks++;
+                }
+            }
+
+            return numChecks == 1 ? tempRay : 0;
         }
 
-        tempRAY=0;
-        tickerSquareBB=kingLocation;
-        while ((tickerSquareBB | Constants.RANK_8) !=Constants.RANK_8) {
-            tickerSquareBB=tickerSquareBB<<8;
-            tempRAY|=tickerSquareBB;
-            if ((tickerSquareBB & relevantAttackers) !=0)return tempRAY;
-            if ((tickerSquareBB & occupiedSquareBitboard) !=0)break;
-        }
-
-        tempRAY=0;
-        tickerSquareBB=kingLocation;
-        while ((tickerSquareBB | Constants.A_FILE) !=Constants.A_FILE) {
-            tickerSquareBB=tickerSquareBB>>>1;
-            tempRAY|=tickerSquareBB;
-            if ((tickerSquareBB & relevantAttackers) !=0)return tempRAY;
-            if ((tickerSquareBB & occupiedSquareBitboard) !=0)break;
-        }
-
-        tempRAY=0;
-        tickerSquareBB=kingLocation;
-        while ((tickerSquareBB | Constants.RANK_1) !=Constants.RANK_1) {
-            tickerSquareBB=tickerSquareBB>>>8;
-            tempRAY|=tickerSquareBB;
-            if ((tickerSquareBB & relevantAttackers) !=0)return tempRAY;
-            if ((tickerSquareBB & occupiedSquareBitboard) !=0)break;
-        }
-
-        relevantAttackers= PieceArray[enemyColor | Type.Bishop] | PieceArray[enemyColor | Type.Queen];
-        tempRAY=0;
-        tickerSquareBB=kingLocation;
-        while ((tickerSquareBB | Constants.BISHOP_TR_EDGE) !=Constants.BISHOP_TR_EDGE) {
-            tickerSquareBB=tickerSquareBB<<9;
-            tempRAY|=tickerSquareBB;
-            if ((tickerSquareBB & relevantAttackers) !=0)return tempRAY;
-            if ((tickerSquareBB & occupiedSquareBitboard) !=0)break;
-        }
-
-        tempRAY=0;
-        tickerSquareBB=kingLocation;
-        while ((tickerSquareBB | Constants.BISHOP_TL_EDGE) !=Constants.BISHOP_TL_EDGE) {
-            tickerSquareBB=tickerSquareBB<<7;
-            tempRAY|=tickerSquareBB;
-            if ((tickerSquareBB & relevantAttackers) !=0)return tempRAY;
-            if ((tickerSquareBB & occupiedSquareBitboard) !=0)break;
-        }
-
-        tempRAY=0;
-        tickerSquareBB=kingLocation;
-        while ((tickerSquareBB | Constants.BISHOP_BR_EDGE) !=Constants.BISHOP_BR_EDGE) {
-            tickerSquareBB=tickerSquareBB>>>7;
-            tempRAY|=tickerSquareBB;
-            if ((tickerSquareBB & relevantAttackers) !=0)return tempRAY;
-            if ((tickerSquareBB & occupiedSquareBitboard) !=0)break;
-        }
-
-        tempRAY=0;
-        tickerSquareBB=kingLocation;
-        while ((tickerSquareBB | Constants.BISHOP_BL_EDGE) !=Constants.BISHOP_BL_EDGE) {
-            tickerSquareBB=tickerSquareBB>>>9;
-            tempRAY|=tickerSquareBB;
-            if ((tickerSquareBB & relevantAttackers) !=0)return tempRAY;
-            if ((tickerSquareBB & occupiedSquareBitboard) !=0)break;
-        }
-
-        tempRAY=0;
-        return tempRAY;
+        return 0;
     }
     private boolean enPassantIsPinned(long fromSquareBB, long toSquareBB) {
         long[] tempPA = PieceArray;

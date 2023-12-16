@@ -1,5 +1,6 @@
 package eval;
 
+import chessUtilities.Util;
 import position.Position;
 import position.Type;
 
@@ -15,6 +16,11 @@ public class StaticEval {
     static final int endGameBishopValue = 350;
     static final int endGameRookValue = 550;
     static final int endGameQueenValue = 1050;
+
+    private static final int MANHATTAN_DISTANCE_MULTIPLIER = 10;
+
+    public static final int CHECKMATE = 2000000000;
+    public static final int DRAW = 0;
 
     private static final boolean[][][][] gameIsDrawnByInsufficientMaterial = new boolean[4][4][4][4];//first is white knight, then white bishop, then black knight, then black bishop
     static {
@@ -35,7 +41,7 @@ public class StaticEval {
     }
 
     public static boolean gameIsDrawnByInsufficientMaterial(int numHeavyPiecesAndPawns, int numWhiteKnights, int numWhiteBishops, int numBlackKnights, int numBlackBishops) {
-        if (numHeavyPiecesAndPawns >0)return false;//game never drawn by insufficient material if there are pawns, queens, or rooks on the board
+        if (numHeavyPiecesAndPawns > 0)return false;//game never drawn by insufficient material if there are pawns, queens, or rooks on the board
         return gameIsDrawnByInsufficientMaterial[numWhiteKnights][numWhiteBishops][numBlackKnights][numBlackBishops];
     }
 
@@ -280,15 +286,22 @@ public class StaticEval {
         return ret;
     }
     private static int endGameKingSafety(Position pos) {
-        //evaluate white king safety
-        int whiteKingSafety= PieceWeights.endGameWhiteKingTable[pos.pieceSquareList[Type.White | Type.King][0]];
+        int eval = 0;
 
+        //evaluate white king safety
+        eval += PieceWeights.endGameWhiteKingTable[pos.pieceSquareList[Type.White | Type.King][0]];
 
         //evaluate black king safety
-        int blackKingSafety= PieceWeights.endGameBlackKingTable[pos.pieceSquareList[Type.Black | Type.King][0]];
+        eval -= PieceWeights.endGameBlackKingTable[pos.pieceSquareList[Type.Black | Type.King][0]];
 
+        //favor positions where the enemy king is farther from the center
+        eval += MANHATTAN_DISTANCE_MULTIPLIER*(pos.whiteToMove ? Util.manhattanDistanceFromCenter(pos.pieceSquareList[Type.Black | Type.King][0]) :
+                Util.manhattanDistanceFromCenter(pos.pieceSquareList[Type.White | Type.King][0]));
 
+        //make the king move toward the opponent king
+        eval += 100-Util.kingDistanceBetween(pos.pieceSquareList[Type.White | Type.King][0],
+                pos.pieceSquareList[Type.White | Type.King][0]) * MANHATTAN_DISTANCE_MULTIPLIER;
 
-        return whiteKingSafety-blackKingSafety;
+        return eval;
     }
 }

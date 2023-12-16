@@ -42,6 +42,7 @@ public class Type {
     public static final byte gameIsADraw=4;
 
     //pin directions
+    //odd numbers are bishop directions, evens are rook directions
     public static final byte pinRight=0;
     public static final byte pinUpRight=1;
     public static final byte pinUp=2;

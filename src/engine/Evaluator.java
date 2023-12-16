@@ -1,108 +1,216 @@
 package engine;
 
-import ChessUtilities.Util;
+import chessUtilities.PrintColor;
 import eval.StaticEval;
+import move.Move;
 import position.CurrentPosition;
 import position.Position;
 import position.Type;
 
-public class Evaluator implements Runnable{//always analyzes the current position
+import java.util.ArrayList;
 
+public class Evaluator implements Runnable{//always analyzes the current position
+    //TODO: when adding transposition tables, if a position found matches the previous position (including left hash), return a score of 0
+    //transposition tables would break draws by repetition otherwise
     public int bestMove;
     public int bestEval;
-    public final int MAX_DEPTH;
+    private final int MAX_DEPTH;
     public int[] principalVariation;
+
+    //node types
+    public static final byte TYPE_1 = 1;//table entry gives exact eval
+    public static final byte TYPE_2 = 2;//table entry gives lower bound
+    public static final byte TYPE_3 = 3;//table entry gives upper bound
 
     public Evaluator(int depth) {
         this.MAX_DEPTH = depth;
-        principalVariation = new int[depth];
+        principalVariation = new int[MAX_DEPTH];
     }
 
     @Override
     public void run() {
         //make a new position that is a copy of the old one
-        Position pos= new Position(CurrentPosition.position.getFen());//probably too slow, def a way to make faster
+        Position pos = new Position(CurrentPosition.position.getFen());//probably too slow
         System.arraycopy(CurrentPosition.position.previousZobristKeys, 0, pos.previousZobristKeys, 0, pos.plyNumber);
 
-        //in the future, would like to make time constant and variable depth
-        //right now this is the other way around
-        //TODO: implement iterative deepening
-        //will need to save best continuation
-        //TODO: add transposition tables
-        //TODO: add opening database
-        findBestMove(pos, MAX_DEPTH);
+        if (pos.plyNumber <= OpeningBook.OPENING_BOOK_LENGTH) {
+            bestMove = pos.whiteToMove ? checkOpeningDatabase(pos.zobristKey, 0, OpeningBook.whiteOpeningBook.size(), OpeningBook.whiteOpeningBook) :
+                    checkOpeningDatabase(pos.zobristKey,0, OpeningBook.blackOpeningBook.size(), OpeningBook.blackOpeningBook);
+        }
+
+        if (!pos.moveIsOnMoveList(bestMove)) {//asserts I don't make an illegal move
+            bestMove = Type.illegalMove;
+        }
+
+        if (bestMove == Type.illegalMove && pos.gameState <= Type.endGame) {//no move was found in the database, the game still continues
+            shiftPrincipalVariation();//use the pv from the previous search
+            for (int i=1;i<=MAX_DEPTH; i++) {
+                findBestMove(pos, i);
+                if (Thread.interrupted()){
+                    System.out.println("Search made it to a depth of: "+i);
+                    break;
+                }
+            }
+
+            printPrincipalVariation();
+            printEvaluation();
+        }
+        else if (pos.gameState > Type.endGame) {
+            System.out.println("game has ended");
+        }
     }
 
     //this level's position already has legal moves, but not in order
     public void findBestMove(Position pos, int depth){
-        pos.optimizeMoveOrder();
         int alpha = Integer.MIN_VALUE+1;
-        int beta = Integer.MAX_VALUE-1;
+        int beta = Integer.MAX_VALUE;
 
-        bestMove = searchRoot(pos,depth,alpha,beta);
+        pos.optimizeMoveOrder(principalVariation[0]);
+        searchRoot(pos,depth,depth,alpha,beta);
+        bestMove = principalVariation[0];
     }
 
     //takes input with legal moves, in order
-    private int searchRoot(Position pos, int depth, int alpha, int beta) {
-        //root node, returns a move instead of an evaluation, prints the evaluation
-        bestEval = Integer.MIN_VALUE;//careful about overflow
-
-        int floatingBestMove = Type.illegalMove;
-
-        if (pos.gameState > Type.endGame) {//game is over, so return an empty move
-            return floatingBestMove;
-        }
+    private void searchRoot(Position pos, int depthLeft, final int SEARCH_MAX_DEPTH, int alpha, int beta) {
+        int[] localPV = new int[depthLeft];
 
         for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
             int moveToMake = pos.legalMoves[i];
 
             pos.makeMove(moveToMake);
-            int eval = -evaluatePosition(pos, depth-1, -beta, -alpha);
+            int eval = -evaluatePosition(pos, depthLeft-1, SEARCH_MAX_DEPTH, -beta, -alpha, localPV);
             pos.unmakeMove(moveToMake);
 
-            if (eval > bestEval){
-                floatingBestMove = moveToMake;
-                bestEval = eval;
+            if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+                break;
             }
-            alpha = Math.max(alpha,eval);
+
+            if (eval > alpha){
+                localPV[0] = moveToMake;
+                alpha = eval;
+            }
         }
-        return floatingBestMove;
+
+        if (!Thread.interrupted()) {
+            System.arraycopy(localPV,0,principalVariation,0,depthLeft);
+            TranspositionTable.tryAddingEntry(pos.zobristKey, alpha, localPV[0], (byte)depthLeft, TYPE_1);
+            bestEval = alpha;
+        }
+        else {//the search was ended halfway
+            Thread.currentThread().interrupt();
+
+            for (int i=0; i < localPV.length; i++) {
+                if (localPV[i] == 0) {
+                    break;
+                }
+                principalVariation[i] = localPV[i];
+            }
+        }
     }
 
     //takes input of position without legal moves or moves ordered
-    public int evaluatePosition(Position pos, int depthLeft, int alpha, int beta) {
+    public int evaluatePosition(Position pos, int depthLeft, final int SEARCH_MAX_DEPTH, int alpha, int beta, int[] parentPV) {
         if (depthLeft==0) {
             return quiescenceEvaluation(pos,alpha,beta);
+        }
+
+        if (Thread.interrupted()) {
+            Thread.currentThread().interrupt();
+            return 0;
+        }
+
+
+        boolean nodeIsLikelyType1 = beta - alpha > 1;
+        if (!nodeIsLikelyType1 && TranspositionTable.positionIsInTable(pos.zobristKey)){//check for this position on the transposition table to use that eval instead
+            TranspositionTable.TableEntry temp = TranspositionTable.getTableEntry(pos.zobristKey);
+            switch (temp.nodeType()) {
+                case TYPE_1 -> {//only use depth that is equal to or greater than the current depth of the search
+                    if (depthLeft <= temp.depth())return temp.eval();
+                }
+                case TYPE_2 -> {
+                    if (depthLeft == temp.depth()){
+                        beta = Math.min(beta, temp.eval());//set upper bound
+                        if (alpha >= beta)return alpha;
+                    }
+                }
+                case TYPE_3 -> {
+                    if (depthLeft == temp.depth()){
+                        alpha = Math.max(alpha, temp.eval());//set lower bound
+                        if (alpha >= beta)return alpha;
+                    }
+                }
+            }
         }
 
         pos.calculateLegalMoves();
 
         if (pos.gameState > Type.endGame) {//game has ended
-            if (pos.gameState == Type.gameIsADraw)return 0;
-            return Integer.MIN_VALUE+1;//always the worst possible position for the player to move in checkmate, so always the worst value
-        }//be careful about integer overflow errors with this. add one to be safe
+            int eval;
+            if (pos.gameState == Type.gameIsADraw) {
+                eval = StaticEval.DRAW;
+            }
+            else {//always the worst possible position for the player to move in checkmate, so always the worst value
+                eval = -StaticEval.CHECKMATE+SEARCH_MAX_DEPTH-depthLeft;
+            }//add the distance from the root node so engine prefers faster checkmates
 
-        pos.optimizeMoveOrder();
-        for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
+            TranspositionTable.tryAddingEntry(pos.zobristKey, eval, Type.illegalMove, (byte)depthLeft, TYPE_1);
+            return eval;
+        }
+
+        pos.optimizeMoveOrder(principalVariation[SEARCH_MAX_DEPTH-depthLeft]);
+        int[] localPV = new int[depthLeft];
+        boolean evalExceededAlpha = false;
+        boolean isFirstMove = true;
+
+        for (int i=pos.indexOfFirstEmptyMove-1; i>=0;i--) {
             int moveToMake = pos.legalMoves[i];
+            int eval;
 
             pos.makeMove(moveToMake);
-            int eval = -evaluatePosition(pos,depthLeft-1,-beta,-alpha);
+            if (isFirstMove){//full window search for expected best move
+                eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH,-beta,-alpha, localPV);
+                isFirstMove = false;
+            }
+            else {//zero window search with expected non-PV nodes, uses a faster and less precise search to find eval
+                eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH,-alpha - 1,-alpha, localPV);//replace -beta with -alpha -1
+                if (eval > alpha && eval < beta) {//if the search actually found an increase in alpha
+                    pos.indexOfFirstEmptyMove = 0;//resets the move list
+                    eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH,-beta,-alpha, localPV);
+                }
+            }
             pos.unmakeMove(moveToMake);
 
+            if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+                return 0;
+            }
+
             if (eval >= beta) {
+                TranspositionTable.tryAddingEntry(pos.zobristKey, eval, moveToMake, (byte)depthLeft, TYPE_3);
                 return beta;
             }
-            if (alpha < eval) {//found a new best move
+            if (eval > alpha) {
                 alpha = eval;
-                bestMove = moveToMake;
+                localPV[0] = moveToMake;
+                evalExceededAlpha = true;
             }
         }
+
+        byte nodeType = evalExceededAlpha? TYPE_1 : TYPE_2;
+        TranspositionTable.tryAddingEntry(pos.zobristKey, alpha, localPV[0], (byte)depthLeft, nodeType);
+        if (evalExceededAlpha)System.arraycopy(localPV,0,parentPV,1,depthLeft);//add PV to parent node's PV if there is an alpha raise
+
         return alpha;
     }
 
     //takes input of position without legal moves or moves ordered
     private int quiescenceEvaluation(Position pos, int alpha, int beta) {
+        if (Thread.interrupted()) {
+            Thread.currentThread().interrupt();
+            return 0;
+        }
+
         int standingPat = StaticEval.evaluate(pos);
         if (standingPat >= beta) return beta;
         alpha = Math.max(alpha, standingPat);
@@ -116,9 +224,65 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             int eval = -quiescenceEvaluation(pos, -beta, -alpha);
             pos.unmakeMove(moveEvaluating);
 
+            if (Thread.interrupted()) {
+                Thread.currentThread().interrupt();
+                return 0;
+            }
+
             if (eval >= beta)return beta;
             alpha = Math.max(alpha, eval);
         }
         return alpha;
+    }
+
+    public int checkOpeningDatabase(long zobristKey, int lowerBound, int upperBound, ArrayList<BookPosition> book) {
+        while (lowerBound <= upperBound) {
+            int indexToCheck = (upperBound + lowerBound)/2;
+            long hashFound = book.get(indexToCheck).getHash();
+
+            if (hashFound == zobristKey) {
+                System.out.println("move found");
+                return book.get(indexToCheck).getRandomMove();
+            }
+
+            if (zobristKey > hashFound)lowerBound = indexToCheck+1;
+            else upperBound = indexToCheck-1;
+        }
+
+        return Type.illegalMove;//no move was found
+    }
+
+    public void printPrincipalVariation() {
+        int listLength = 0;
+        for (int i : principalVariation) {
+            if (i == Type.illegalMove) break;//pruning made the PV shorter than the depth
+            listLength++;
+        }
+
+        System.out.print(PrintColor.RED+"Principal Variation: ");
+        for (int i=0;i<listLength;i++) {
+            System.out.print(Move.getStandardStringFromMove(principalVariation[i])+" ");
+        }
+        System.out.println(PrintColor.RESET);
+    }
+
+    private void shiftPrincipalVariation() {
+        /*
+        although not guaranteed that every position will have the new best moves in the new principal variation,
+        the previously searched moves that were found to be good will probably be part of the new initial PV
+         */
+        for (int i=0; i<principalVariation.length-2; i++) {
+            principalVariation[i] = principalVariation[i+2];
+        }
+    }
+
+    private void printEvaluation() {
+        if (bestEval >= StaticEval.CHECKMATE-MAX_DEPTH) {
+            String evalString = "Mate in "+((StaticEval.CHECKMATE-bestEval)/2 + 1);
+            System.out.println(evalString);
+        }
+        else {
+            System.out.println("Best Eval: "+bestEval);
+        }
     }
 }

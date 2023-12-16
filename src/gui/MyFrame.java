@@ -3,9 +3,9 @@ package gui;
 import javax.swing.*;
 import java.awt.event.*;
 
-import ChessUtilities.Util;
+import chessUtilities.Util;
+import engine.TranspositionTable;
 import position.CurrentPosition;
-import position.Position;
 import engine.MainEngine;
 
 
@@ -94,6 +94,12 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
         }
         else if (e.getKeyChar() == 'p'){
             CurrentPosition.position.printFen();
+        }
+        else if (e.getKeyChar() == 't'){
+            TranspositionTable.printNumEntries();
+        }
+        else if (e.getKeyChar() == 'z'){
+            System.out.println("Current Zobrist Key: "+Long.toHexString(CurrentPosition.position.zobristKey));
         }
         else if (e.getKeyChar() == 'q') promotionMoveType = position.Type.pawnPromotesToQ;
         else if (e.getKeyChar() == 'n') promotionMoveType = position.Type.pawnPromotesToN;

@@ -62,17 +62,6 @@ public class EvaluationTests {//TODO: add more evaluation tests to quickly make 
         int bestMove = evaluator.bestMove;
         int eval = evaluator.bestEval;
 
-        System.out.println("Position "+positionNumber+" scores: "+eval+" after move: "+ Move.getStringFromMove(bestMove));
-    }
-
-    public static void testEvalOfMove(String positionFen, String move, int depth) {
-        Position pos = new Position(positionFen);
-        evaluator = new Evaluator(depth);
-
-        int moveToMake = Move.makeMoveFromString(move, (byte) 0, (byte) 0);
-        pos.makeMove(moveToMake);
-
-        int eval = -evaluator.evaluatePosition(pos,depth,Integer.MIN_VALUE+1,Integer.MAX_VALUE-1);
-        System.out.print("Eval with pruning of "+move+" is: "+eval);
+        System.out.println("Position "+positionNumber+" scores: "+eval+" after move: "+ Move.getStandardStringFromMove(bestMove));
     }
 }

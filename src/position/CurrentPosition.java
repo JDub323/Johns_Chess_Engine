@@ -2,6 +2,7 @@ package position;
 
 import engine.MoveMaker;
 import gui.Graphical;
+import move.Move;
 
 import java.util.Stack;
 
@@ -37,6 +38,7 @@ public class CurrentPosition {
     public static void makeMove(int move) {
         PreviousMadeMoves.push(move);
         position.makeMove(move);
+        Graphical.updateHighlightedSquares(move);
     }
     public static void unmakeMove() {
         position.unmakeMove(PreviousMadeMoves.pop());

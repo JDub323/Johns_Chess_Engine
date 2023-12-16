@@ -16,6 +16,7 @@ public class Graphical extends JPanel{
     public static byte previousSelectedSquare = -1;
     public static byte[] graphicSquareCentricPos = new byte[64];
     public static byte fromSquare=0,toSquare=0;
+    private static byte recentMoveFromSquare = -100, recentMoveToSquare = -100;
     public static boolean stopAllMoves;
 
     Graphical () {
@@ -26,6 +27,7 @@ public class Graphical extends JPanel{
     public void paintComponent (Graphics g) {
         super.paintComponent(g);
         DrawPieces.drawBoard(g);
+        DrawPieces.drawHighlightedSquares(g,recentMoveFromSquare,recentMoveToSquare);
         drawPosition(g,graphicSquareCentricPos);
         drawPickedUpPiece(g, pickedUpPiece);
         drawSquaresFromBitboard(g,MoveTests.getToSquaresFromMoveList(CurrentPosition.position,selectedSquare));
@@ -163,6 +165,11 @@ public class Graphical extends JPanel{
                 System.arraycopy(CurrentPosition.position.squareCentricPos,0,graphicSquareCentricPos,0,64);
                 selectedSquare = -1;
             }
+    }
+
+    public static void updateHighlightedSquares(int move) {
+        recentMoveFromSquare = Move.getFromSquareFromMove(move);
+        recentMoveToSquare = Move.getToSquareFromMove(move);
     }
 
     public static void drawSquaresFromBitboard(Graphics g, long input) {

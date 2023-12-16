@@ -1,4 +1,4 @@
-package ChessUtilities;
+package chessUtilities;
 
 public class PrintColor {
     public static final String RESET = "\u001B[0m";

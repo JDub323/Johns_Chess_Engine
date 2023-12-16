@@ -12,7 +12,7 @@ public class MoveMaker implements Runnable{
     boolean makeMoves;
     int waitTimeMS;
 
-    Evaluator evaluator;
+    Evaluator evaluator = new Evaluator(20);//arbitrarily large depth number
     Thread bestMoveFinder;
 
     public MoveMaker(Position pos, boolean playAsWhite, int waitTimeMS, boolean makeMoves) {
@@ -23,7 +23,6 @@ public class MoveMaker implements Runnable{
     }
 
     private void startMoveSearch() {
-        evaluator = new Evaluator(5);//TODO: change this to infinity when implementing iterative deepening
         bestMoveFinder = new Thread(evaluator);
         bestMoveFinder.start();
     }
@@ -45,10 +44,11 @@ public class MoveMaker implements Runnable{
             Graphical.stopAllMoves=true;
             startMoveSearch();
             try {
-                bestMoveFinder.join();
+                Thread.sleep(waitTimeMS);
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+            bestMoveFinder.interrupt();
             makeBestMove(evaluator.bestMove);
             FrameHolder.chessGraphics.updateGraphics();
             Graphical.stopAllMoves=false;
