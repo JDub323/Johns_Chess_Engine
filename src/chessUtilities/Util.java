@@ -107,9 +107,9 @@ public class Util {
         return fileDistance + rankDistance;
     }
 
-    public static void printMoveArray(int[] moveArray) {
-        for (int j : moveArray) {
-            System.out.print(Move.getStandardStringFromMove(j) + " | ");
+    public static void printArray(byte[] array) {
+        for (int j : array) {
+            System.out.print(j+", ");
         }
         System.out.println();
     }

@@ -88,6 +88,27 @@ public class Constants {
     public static final long NOT_GH_FILE=~(H_FILE|G_FILE);
     public static final long NOT_AB_FILE=~(A_FILE|B_FILE);
 
+    public static final long[] ALL_FILES = {
+            A_FILE,
+            B_FILE,
+            C_FILE,
+            D_FILE,
+            E_FILE,
+            F_FILE,
+            G_FILE,
+            H_FILE
+    };
+    public static final long[] ADJACENT_FILES = {
+            B_FILE,
+            A_FILE | C_FILE,
+            B_FILE | D_FILE,
+            C_FILE | E_FILE,
+            D_FILE | F_FILE,
+            E_FILE | G_FILE,
+            F_FILE | H_FILE,
+            G_FILE
+    };
+
     //ranks
     public static final long RANK_1=a1|b1|c1|d1|e1|f1|g1|h1;
     public static final long RANK_2=a2|b2|c2|d2|e2|f2|g2|h2;
@@ -97,6 +118,11 @@ public class Constants {
     public static final long RANK_6=a6|b6|c6|d6|e6|f6|g6|h6;
     public static final long RANK_7=a7|b7|c7|d7|e7|f7|g7|h7;
     public static final long RANK_8=a8|b8|c8|d8|e8|f8|g8|h8;
+
+    public static final long[] ENEMY_SQUARES = {//0 is white, 1 is black
+            RANK_8 | RANK_7 | RANK_6 | RANK_5,
+            RANK_4 | RANK_3 | RANK_2 | RANK_1
+    };
 
     //special
     public static final long LIGHT_SQUARES=0x55AA55AA55AA55AAL;

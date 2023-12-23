@@ -1,6 +1,8 @@
 package eval;
 
 import chessUtilities.Util;
+import move.PieceAttack;
+import position.Constants;
 import position.Position;
 import position.Type;
 
@@ -11,13 +13,29 @@ public class StaticEval {
     static final int midGameRookValue = 500;
     static final int midGameQueenValue = 900;
 
-    static final int endGamePawnValue = 120;
+    static final int endGamePawnValue = 110;
     static final int endGameKnightValue = 300;
     static final int endGameBishopValue = 350;
     static final int endGameRookValue = 550;
     static final int endGameQueenValue = 1050;
 
+    //multiplied by the number of squares seen by each respective piece
     private static final int MANHATTAN_DISTANCE_MULTIPLIER = 10;
+    private static final int BISHOP_MOBILITY_MULTIPLIER = 4;
+    private static final int ROOK_MOBILITY_MULTIPLIER = 2;
+    private static final int QUEEN_MOBILITY_MULTIPLIER = 1;
+    private static final int KING_MOBILITY_MULTIPLIER = -3;
+
+    //added each time the event occurs
+    private static final int PASSED_PAWN_BONUS = 80;
+    private static final int ISOLATED_PAWN_BONUS = -30;
+    private static final int DOUBLED_PAWN_BONUS = -30;
+    private static final int DEFENDED_PAWN_BONUS = 10;
+    private static final int OUTPOST_BONUS = 80;//knights in enemy territory defended by a pawn
+    private static final int DEFENDED_MINOR_PIECE_BONUS = 30;//don't like loose bishops/knights
+    //no real benefit for having rooks or queens defended by pawns
+    private static final int CONNECTED_ROOK_BONUS = 35;//this is always doubled since they connect to each other
+
 
     public static final int CHECKMATE = 2000000000;
     public static final int DRAW = 0;
@@ -84,14 +102,48 @@ public class StaticEval {
         for (int i=0;i<pos.numPieces[whitePawn];i++) {
             int square = pos.pieceSquareList[whitePawn][i];
             wpLocationFactor += PieceWeights.midGameWhitePawnTable[square];
+            wpLocationFactor += getPawnBonuses(pos, square, Type.White);
         }
         for (int i=0;i<pos.numPieces[blackPawn];i++) {
             int square = pos.pieceSquareList[blackPawn][i];
             bpLocationFactor += PieceWeights.midGameBlackPawnTable[square];
+            bpLocationFactor += getPawnBonuses(pos, square, Type.Black);
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
     }
+
+    private static int getPawnBonuses(Position pos, int square, byte color) {
+        int ret =0;
+        long fileMask = Constants.ALL_FILES[square%8];
+        long adjFileMask = Constants.ADJACENT_FILES[square%8];
+        byte enemyColor = (byte) (color^8);
+
+
+        if (((fileMask | adjFileMask) & pos.PieceArray[enemyColor | Type.Pawn]) != 0) {//the pawn is a passed pawn
+            ret += PASSED_PAWN_BONUS;
+        }
+        if ((adjFileMask & pos.PieceArray[color | Type.Pawn]) == 0) {//the pawn is an isolated pawn
+            ret += ISOLATED_PAWN_BONUS;
+        }
+        if (Long.bitCount(fileMask & pos.PieceArray[color | Type.Pawn]) > 1) {//there is more than one pawn in the same file: doubled pawns
+            ret += DOUBLED_PAWN_BONUS;
+        }
+        long squareBB = Util.toBitboard(square);
+        if (color == Type.White) {
+            if ((pos.whiteAttacksArray[Type.Pawn] & squareBB) != 0) {
+                ret += DEFENDED_PAWN_BONUS;
+            }
+        }
+        else {
+            if ((pos.blackAttacksArray[Type.Pawn] & squareBB) != 0) {
+                ret += DEFENDED_PAWN_BONUS;
+            }
+        }
+
+        return ret;
+    }
+
     private static int midGameKnightWeight(Position pos) {
         int whiteKnight = Type.White | Type.Knight;
         int blackKnight = Type.Black | Type.Knight;
@@ -104,10 +156,20 @@ public class StaticEval {
         for (int i=0;i<pos.numPieces[whiteKnight];i++) {
             int square = pos.pieceSquareList[whiteKnight][i];
             wpLocationFactor += PieceWeights.whiteKnightTable[square];
+            if ((pos.whiteAttacksArray[Type.Pawn] & Util.toBitboard(square)
+                    & Constants.ENEMY_SQUARES[0]) != 0) {
+                wpLocationFactor += OUTPOST_BONUS;
+            }
+            if ((pos.whiteAttacks & Util.toBitboard(square)) != 0) {
+                wpLocationFactor += DEFENDED_MINOR_PIECE_BONUS;
+            }
         }
         for (int i=0;i<pos.numPieces[blackKnight];i++) {
             int square = pos.pieceSquareList[blackKnight][i];
             bpLocationFactor += PieceWeights.blackKnightTable[square];
+            if ((pos.blackAttacks & Util.toBitboard(square)) != 0) {
+                bpLocationFactor += DEFENDED_MINOR_PIECE_BONUS;
+            }
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -124,10 +186,22 @@ public class StaticEval {
         for (int i=0;i<pos.numPieces[whiteBishop];i++) {
             int square = pos.pieceSquareList[whiteBishop][i];
             wpLocationFactor += PieceWeights.whiteBishopTable[square];
+            wpLocationFactor += Long.bitCount(PieceAttack.lookUpBishopAttacks(square, pos.allPieces))*BISHOP_MOBILITY_MULTIPLIER;
+            if ((pos.blackAttacks & Util.toBitboard(square)) != 0) {
+                wpLocationFactor += DEFENDED_MINOR_PIECE_BONUS;
+            }
         }
         for (int i=0;i<pos.numPieces[whiteBishop];i++) {
             int square = pos.pieceSquareList[whiteBishop][i];
             bpLocationFactor += PieceWeights.blackBishopTable[square];
+            bpLocationFactor += Long.bitCount(PieceAttack.lookUpBishopAttacks(square, pos.allPieces))*BISHOP_MOBILITY_MULTIPLIER;
+            if ((pos.whiteAttacksArray[Type.Pawn] & Util.toBitboard(square)
+                    & Constants.ENEMY_SQUARES[1]) != 0) {
+                bpLocationFactor += OUTPOST_BONUS;
+            }
+            if ((pos.whiteAttacks & Util.toBitboard(square)) != 0) {
+                bpLocationFactor += DEFENDED_MINOR_PIECE_BONUS;
+            }
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -144,10 +218,18 @@ public class StaticEval {
         for (int i=0;i<pos.numPieces[whiteRook];i++) {
             int square = pos.pieceSquareList[whiteRook][i];
             wpLocationFactor += PieceWeights.whiteRookTable[square];
+            wpLocationFactor += Long.bitCount(PieceAttack.lookUpRookAttacks(square, pos.allPieces))*ROOK_MOBILITY_MULTIPLIER;
+            if ((Util.toBitboard(square) & pos.whiteAttacksArray[Type.Rook]) != 0) {//rooks are connected
+                wpLocationFactor += CONNECTED_ROOK_BONUS;
+            }
         }
         for (int i=0;i<pos.numPieces[blackRook];i++) {
             int square = pos.pieceSquareList[blackRook][i];
             bpLocationFactor += PieceWeights.blackRookTable[square];
+            bpLocationFactor += Long.bitCount(PieceAttack.lookUpRookAttacks(square, pos.allPieces))*ROOK_MOBILITY_MULTIPLIER;
+            if ((Util.toBitboard(square) & pos.blackAttacksArray[Type.Rook]) != 0) {//rooks are connected
+                bpLocationFactor += CONNECTED_ROOK_BONUS;
+            }
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -164,22 +246,28 @@ public class StaticEval {
         for (int i=0;i<pos.numPieces[whiteQueen];i++) {
             int square = pos.pieceSquareList[whiteQueen][i];
             wpLocationFactor += PieceWeights.whiteQueenTable[square];
+            wpLocationFactor += Long.bitCount(PieceAttack.lookUpQueenAttacks(square, pos.allPieces))*QUEEN_MOBILITY_MULTIPLIER;
         }
         for (int i=0;i<pos.numPieces[blackQueen];i++) {
             int square = pos.pieceSquareList[blackQueen][i];
             bpLocationFactor += PieceWeights.blackQueenTable[square];
+            bpLocationFactor += Long.bitCount(PieceAttack.lookUpQueenAttacks(square, pos.allPieces))*QUEEN_MOBILITY_MULTIPLIER;
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
     }
     private static int midGameKingSafety(Position pos) {
         //evaluate white king safety
-        int whiteKingSafety= PieceWeights.midGameWhiteKingTable[pos.pieceSquareList[Type.White | Type.King][0]];
+        int whiteKingPos = pos.pieceSquareList[Type.White | Type.King][0];
+        int whiteKingSafety= PieceWeights.midGameWhiteKingTable[whiteKingPos];
 
+        whiteKingSafety += Long.bitCount(PieceAttack.lookUpQueenAttacks(whiteKingPos,pos.allPieces))*KING_MOBILITY_MULTIPLIER;
 
         //evaluate black king safety
-        int blackKingSafety= PieceWeights.midGameBlackKingTable[pos.pieceSquareList[Type.Black | Type.King][0]];
+        int blackKingPos = pos.pieceSquareList[Type.Black | Type.King][0];
+        int blackKingSafety= PieceWeights.midGameBlackKingTable[blackKingPos];
 
+        blackKingSafety += Long.bitCount(PieceAttack.lookUpQueenAttacks(blackKingPos,pos.allPieces))*KING_MOBILITY_MULTIPLIER;
 
 
         return whiteKingSafety-blackKingSafety;

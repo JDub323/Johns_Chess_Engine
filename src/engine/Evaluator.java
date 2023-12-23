@@ -47,13 +47,12 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             for (int i=1;i<=MAX_DEPTH; i++) {
                 findBestMove(pos, i);
                 if (Thread.interrupted()){
-                    System.out.println("Search made it to a depth of: "+i);
+                    //System.out.println("Search made it to a depth of: "+i);
                     break;
                 }
             }
-
-            printPrincipalVariation();
-            printEvaluation();
+            //printPrincipalVariation();
+            //printEvaluation(pos.whiteToMove);
         }
         else if (pos.gameState > Type.endGame) {
             System.out.println("game has ended");
@@ -73,12 +72,13 @@ public class Evaluator implements Runnable{//always analyzes the current positio
     //takes input with legal moves, in order
     private void searchRoot(Position pos, int depthLeft, final int SEARCH_MAX_DEPTH, int alpha, int beta) {
         int[] localPV = new int[depthLeft];
+        System.arraycopy(principalVariation,0,localPV,0,localPV.length);
 
         for (int i=pos.indexOfFirstEmptyMove-1; i>=0 ;i--) {
             int moveToMake = pos.legalMoves[i];
 
             pos.makeMove(moveToMake);
-            int eval = -evaluatePosition(pos, depthLeft-1, SEARCH_MAX_DEPTH, -beta, -alpha, localPV);
+            int eval = -evaluatePosition(pos, depthLeft-1, SEARCH_MAX_DEPTH, 0,-beta, -alpha, localPV);
             pos.unmakeMove(moveToMake);
 
             if (Thread.interrupted()) {
@@ -99,20 +99,16 @@ public class Evaluator implements Runnable{//always analyzes the current positio
         }
         else {//the search was ended halfway
             Thread.currentThread().interrupt();
-
-            for (int i=0; i < localPV.length; i++) {
-                if (localPV[i] == 0) {
-                    break;
-                }
-                principalVariation[i] = localPV[i];
-            }
         }
     }
 
     //takes input of position without legal moves or moves ordered
-    public int evaluatePosition(Position pos, int depthLeft, final int SEARCH_MAX_DEPTH, int alpha, int beta, int[] parentPV) {
-        if (depthLeft==0) {
-            return quiescenceEvaluation(pos,alpha,beta);
+    public int evaluatePosition(Position pos, int depthLeft, final int SEARCH_MAX_DEPTH, int searchDepth, int alpha, int beta, int[] parentPV) {
+        if (depthLeft==0){
+            if (!pos.inCheck || searchDepth >= SEARCH_MAX_DEPTH+4) {//arbitrary constant to limit check extensions forever
+                return quiescenceEvaluation(pos,alpha,beta);
+            }
+            depthLeft++;//extend the search for checks
         }
 
         if (Thread.interrupted()) {
@@ -158,7 +154,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             return eval;
         }
 
-        pos.optimizeMoveOrder(principalVariation[SEARCH_MAX_DEPTH-depthLeft]);
+        pos.optimizeMoveOrder(principalVariation[searchDepth]);
         int[] localPV = new int[depthLeft];
         boolean evalExceededAlpha = false;
         boolean isFirstMove = true;
@@ -169,14 +165,14 @@ public class Evaluator implements Runnable{//always analyzes the current positio
 
             pos.makeMove(moveToMake);
             if (isFirstMove){//full window search for expected best move
-                eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH,-beta,-alpha, localPV);
+                eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH, searchDepth+1,-beta,-alpha, localPV);
                 isFirstMove = false;
             }
             else {//zero window search with expected non-PV nodes, uses a faster and less precise search to find eval
-                eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH,-alpha - 1,-alpha, localPV);//replace -beta with -alpha -1
+                eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH,searchDepth+1,-alpha - 1,-alpha, localPV);//replace -beta with -alpha -1
                 if (eval > alpha && eval < beta) {//if the search actually found an increase in alpha
                     pos.indexOfFirstEmptyMove = 0;//resets the move list
-                    eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH,-beta,-alpha, localPV);
+                    eval = -evaluatePosition(pos,depthLeft-1,SEARCH_MAX_DEPTH, searchDepth+1,-beta,-alpha, localPV);
                 }
             }
             pos.unmakeMove(moveToMake);
@@ -199,7 +195,9 @@ public class Evaluator implements Runnable{//always analyzes the current positio
 
         byte nodeType = evalExceededAlpha? TYPE_1 : TYPE_2;
         TranspositionTable.tryAddingEntry(pos.zobristKey, alpha, localPV[0], (byte)depthLeft, nodeType);
-        if (evalExceededAlpha)System.arraycopy(localPV,0,parentPV,1,depthLeft);//add PV to parent node's PV if there is an alpha raise
+        if (evalExceededAlpha) {
+            System.arraycopy(localPV,0,parentPV,1, parentPV.length-1);//add PV to parent node's PV if there is an alpha raise
+        }
 
         return alpha;
     }
@@ -241,7 +239,6 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             long hashFound = book.get(indexToCheck).getHash();
 
             if (hashFound == zobristKey) {
-                System.out.println("move found");
                 return book.get(indexToCheck).getRandomMove();
             }
 
@@ -276,13 +273,19 @@ public class Evaluator implements Runnable{//always analyzes the current positio
         }
     }
 
-    private void printEvaluation() {
-        if (bestEval >= StaticEval.CHECKMATE-MAX_DEPTH) {
-            String evalString = "Mate in "+((StaticEval.CHECKMATE-bestEval)/2 + 1);
-            System.out.println(evalString);
+    private void printEvaluation(boolean playingAsWhite) {
+        if (Math.abs(bestEval) >= StaticEval.CHECKMATE-MAX_DEPTH) {
+            int movesBeforeCheckmate = (StaticEval.CHECKMATE-Math.abs(bestEval))/2;
+            String evalString = "Mate in "+movesBeforeCheckmate;
+            if (movesBeforeCheckmate != 0)System.out.println(evalString);
+            else System.out.println("Checkmate");
         }
         else {
-            System.out.println("Best Eval: "+bestEval);
+            if (playingAsWhite)System.out.println("Eval: "+bestEval);
+            else {
+                int printingEval = -bestEval;
+                System.out.println("Eval: "+printingEval);
+            }
         }
     }
 }

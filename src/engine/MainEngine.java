@@ -26,6 +26,6 @@ public class MainEngine {
 
     public static void startPosition() {
         String startingPosition = PositionFens.startingpos;
-        CurrentPosition.InitializePosition(startingPosition,true,false, 1000);
+        CurrentPosition.InitializePosition(startingPosition,true,false, 2000);
     }
 }

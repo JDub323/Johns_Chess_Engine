@@ -1,84 +1,76 @@
 package tests;
 
 import chessUtilities.Util;
+import move.GenerateMagicBitBoards;
+import move.PieceAttack;
 import position.Position;
 import position.CurrentPosition;
 import move.Move;
 import position.Zobrist;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Scanner;
+
 public class MoveTests {
 
-    public static void testAllTestPositions() {
+    private static final ArrayList<PerftTestPosition> testPositions = new ArrayList<>();
+
+    public static void main(String[] args) {
+        PieceAttack.generateMoveArrays();
+        GenerateMagicBitBoards.makeBitboardDatabase();
+        initializeMoveTestArray();
         long startingTime = System.nanoTime();
 
-        testTestPosition("r6r/1b2k1bq/8/8/7B/8/8/R3K2R b KQ - 3 1", 1, 8, 1);
-
-        testTestPosition("8/8/8/2k5/2pP4/8/B7/4K3 b - d3 0 1", 1, 8,2);
-
-        testTestPosition("r1bqkbnr/pppppppp/n7/8/8/P7/1PPPPPPP/RNBQKBNR w KQkq - 2 1", 1, 19,3);
-
-        testTestPosition("r3k2r/p1pp1pb1/bn2Qnp1/2qPN3/1p2P3/2N5/PPPBBPPP/R3K2R b KQkq - 3 1", 1, 5,4);
-
-        testTestPosition("2kr3r/p1ppqpb1/bn2Qnp1/3PN3/1p2P3/2N5/PPPBBPPP/R3K2R b KQ - 3 1", 1, 44,5);
-
-        testTestPosition("rnb2k1r/pp1Pbppp/2p5/q7/2B5/8/PPPQNnPP/RNB1K2R w KQ - 3 1", 1, 39,6);
-
-        testTestPosition("2r5/3pk3/8/2P5/8/2K5/8/8 w - - 5 1", 1, 9,7);
-
-        testTestPosition("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 1", 3, 62379,8);
-
-        testTestPosition("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 1", 3, 89890,9);
-
-        testTestPosition("3k4/3p4/8/K1P4r/8/8/8/8 b - - 0 1", 6, 1134888,10);
-
-        testTestPosition("8/8/4k3/8/2p5/8/B2P2K1/8 w - - 0 1", 6, 1015133,11);
-
-        testTestPosition("8/8/1k6/2b5/2pP4/8/5K2/8 b - d3 0 1", 6, 1440467,12);
-
-        testTestPosition("5k2/8/8/8/8/8/8/4K2R w K - 0 1", 6, 661072,13);
-
-        testTestPosition("3k4/8/8/8/8/8/8/R3K3 w Q - 0 1", 6, 803711,14);
-
-        testTestPosition("r3k2r/1b4bq/8/8/8/8/7B/R3K2R w KQkq - 0 1", 4, 1274206,15);
-
-        testTestPosition("r3k2r/8/3Q4/8/8/5q2/8/R3K2R b KQkq - 0 1", 4, 1720476,16);
-
-        testTestPosition("2K2r2/4P3/8/8/8/8/8/3k4 w - - 0 1", 6, 3821001,17);
-
-        testTestPosition("8/8/1P2K3/8/2n5/1q6/8/5k2 b - - 0 1", 5, 1004658,18);
-
-        testTestPosition("4k3/1P6/8/8/8/8/K7/8 w - - 0 1", 6, 217342,19);
-
-        testTestPosition("8/P1k5/K7/8/8/8/8/8 w - - 0 1", 6, 92683,20);
-
-        testTestPosition("K1k5/8/P7/8/8/8/8/8 w - - 0 1", 6, 2217,21);
-
-        testTestPosition("8/k1P5/8/1K6/8/8/8/8 w - - 0 1", 7, 567584,22);
-
-        testTestPosition("8/8/2k5/5q2/5n2/8/5K2/8 b - - 0 1", 4, 23527,23);
-
-        testTestPosition("r1bk2nr/pppP1p1p/5qp1/8/8/4PN2/P4PPP/bN1QKB1R w K - 0 21", 4, 1415769,24);
-
+        testPositions.get(1).testPosition();
+        long sumOfAllNodes=0;
+        for (PerftTestPosition position : testPositions) {
+            sumOfAllNodes = position.getAllNodes();
+            position.testPosition();
+        }
 
         long duration = (System.nanoTime() -startingTime)/1000000;
         duration -= 184;//to account for the time it takes to make the new positions
-        int totalNodes = 15347135;
-        long nodesPerSecond= totalNodes* 1000L /(duration);
+        long nodesPerSecond= (sumOfAllNodes/duration) * 1000L;
         System.out.println("\nNodes Per Second: "+nodesPerSecond);
     }
-    public static void testInitialPosition(int depth) {
-        Position startingPos = new Position("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
 
-        long startingTime = System.nanoTime();
-        for (int i=0;i<=depth;i++) {
-            testTestPosition(startingPos, i,targetNodes[i]);
+    public static void testAllEtherealTestPositions() {
+
+    }
+
+    private static void initializeMoveTestArray() {
+        File f = new File("C:\\Users\\jwhal\\Johns_Chess_Engine\\src\\tests\\EtherealTestPositions");
+        Scanner a;
+        try {
+            a = new Scanner(f);
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
         }
 
-        long duration = (System.nanoTime()-startingTime)/1000000;
-        long totalNodes = sumOfNodes(depth);
+        while (a.hasNextLine()) {
+            String line = a.nextLine();
+            Scanner b = new Scanner(line);
+            b.useDelimiter(" ;");
 
-        long nodesPerSecond= totalNodes* 1000L /(duration);
-        System.out.println("\nNodes Per Second: "+nodesPerSecond);
+            String fen = b.next();
+
+            ArrayList<Long> targetList = new ArrayList<>();
+            while (b.hasNext()) {
+                targetList.add(b.nextLong());
+            }
+
+            long[] returnList = new long[targetList.size()];
+
+            for (int i=0; i<targetList.size();i++) {
+                returnList[i] = targetList.get(i);
+            }
+
+            testPositions.add(new PerftTestPosition(fen,(byte)targetList.size(),returnList));
+        }
+
+
     }
 
 
@@ -94,86 +86,6 @@ public class MoveTests {
         }
         return ret;
     }
-
-    public static int testNumPositions(Position pos, int depth) {
-        if (depth==0)return 1;
-
-        int numPositions=0;
-
-        for (int i=0;i<pos.indexOfFirstEmptyMove;i++) {
-            int moveToMake = pos.legalMoves[i];
-
-            pos.makeMove(moveToMake);
-            pos.calculateLegalMoves();
-            numPositions += testNumPositions(pos,depth-1);
-            pos.unmakeMove(moveToMake);
-        }
-        return numPositions;
-    }
-
-
-    public static void testMovesAndShowNodes(Position pos, int depth) {
-        int workingTotal=0;
-        for (int i = 0; i<pos.indexOfFirstEmptyMove; i++) {
-
-            int testingMove = pos.legalMoves[i];
-            Move.printMoveInStandardNotation(testingMove);
-            pos.makeMove(testingMove);
-            pos.calculateLegalMoves();
-            int nodes = MoveTests.testNumPositions(pos, depth-1);
-            System.out.println("----"+nodes);
-            workingTotal+=nodes;
-            pos.unmakeMove(testingMove);
-        }
-        System.out.println("Total nodes searched: "+workingTotal);
-    }
-    public static void testTestPositionAndShowNodes(String fen, int depth) {
-        Position pos = new Position (fen);
-        testMovesAndShowNodes(pos,depth);
-        CurrentPosition.position = pos;
-    }
-    public static void testTestPositionAndShowNodes(String fen, int depth, int moveToMake) {
-        Position pos = new Position (fen);
-        pos.makeMove(moveToMake);
-        pos.calculateLegalMoves();
-        testMovesAndShowNodes(pos,depth);
-        System.out.print("New Fen: ");
-        pos.printFen();
-        CurrentPosition.position = pos;
-    }
-
-    public static void testMoves(Position pos, int ply) {
-        for (int i=0;i<=ply;i++) {
-            System.out.println("Depth "+i+":"+ MoveTests.testNumPositions(pos, i));
-        }
-    }
-
-    public static void testTestPosition(String fen, int depth, int targetNodes, int moveTestNumber) {
-        Position temp = new Position(fen);
-
-        long startingTime = System.nanoTime();
-        int nodesFound = testNumPositions(temp, depth);
-        long duration = (System.nanoTime()-startingTime)/1000000;
-
-        long correctZobristKey = Zobrist.getZobristKeyFromPosition(temp.whiteToMove,temp.castlingRights,temp.enPassantTargetFiles,temp.squareCentricPos);
-        boolean testPassed = nodesFound==targetNodes && correctZobristKey == temp.zobristKey;
-
-        if(testPassed)System.out.println("MoveTest "+moveTestNumber+" Nodes: "+targetNodes+" = "+nodesFound+" PASS  "+duration+" ms");
-        else System.out.println("fen: "+fen+" Nodes: "+targetNodes+" = "+nodesFound+" FAIL  else zobrist keys don't match");
-    }
-
-    public static void testTestPosition(Position pos, int depth, long targetNodes) {
-        long startingTime = System.nanoTime();
-        int nodesFound = MoveTests.testNumPositions(pos, depth);
-        long duration = (System.nanoTime()-startingTime)/1000000;
-
-        long correctZobristKey = Zobrist.getZobristKeyFromPosition(pos.whiteToMove,pos.castlingRights,pos.enPassantTargetFiles,pos.squareCentricPos);
-        boolean testPassed = nodesFound==targetNodes && correctZobristKey == pos.zobristKey;
-
-        if(testPassed)System.out.println("Depth: "+depth+" Nodes: "+targetNodes+" = "+nodesFound+" PASS  "+duration+" ms");
-        else System.out.println("fen: "+pos.getFen()+" Nodes: "+targetNodes+" =/= "+nodesFound+" FAIL  or "+correctZobristKey+" =/= "+pos.zobristKey);
-    }
-
     public static boolean pieceListsAreAccurate(Position pos) {
         Position pos2 = new Position(pos.getFen());
 
@@ -192,13 +104,5 @@ public class MoveTests {
         }
 
         return true;
-    }
-
-
-    private static final long[] targetNodes = {1,20,400,8902,197281,4865609,119060324,3195901860L,84998978956L,2439530234167L,69352859712417L};
-
-    private static long sumOfNodes(int maxNodeIndex) {
-        if (maxNodeIndex==0) return targetNodes[0];
-        return targetNodes[maxNodeIndex] + sumOfNodes(maxNodeIndex-1);
     }
 }

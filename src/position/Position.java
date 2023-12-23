@@ -1837,6 +1837,45 @@ public class Position {
 
     }
 
+    public boolean allPositionRepresentationsAgree() {
+        //turn each position representation into a scp, then check for equality on each
+        byte[] scpFromPieceArray = new byte[64];
+        byte[] scpFromLists = new byte[64];
+
+        for (int color = 0; color < 9; color+= 8) {
+            for (int pieceType = 1; pieceType <= 6; pieceType++) {
+                for (int square = 0; square < 64; square++) {
+                    if ((PieceArray[color | pieceType] & Util.toBitboard(square)) != 0){
+                        scpFromPieceArray[square] = (byte) (color | pieceType);
+                    }
+                }
+
+                for (int i = 0; i< numPieces[color | pieceType]; i++) {
+                    int square = pieceSquareList[color | pieceType][i];
+                    scpFromLists[square] = (byte) (color | pieceType);
+                }
+            }
+        }
+
+        for (int i=0; i<64; i++) {
+            if (squareCentricPos[i] != scpFromPieceArray[i]){
+                Util.printArray(squareCentricPos);
+                Util.printArray(scpFromPieceArray);
+                Util.printArray(scpFromLists);
+                System.out.println("Piece Array disagrees");
+                return false;
+            }
+            if (squareCentricPos[i] != scpFromLists[i]){
+                Util.printArray(squareCentricPos);
+                Util.printArray(scpFromPieceArray);
+                Util.printArray(scpFromLists);
+                System.out.println("Piece List disagrees");
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void printFen() {
         System.out.print(getFen());
     }
