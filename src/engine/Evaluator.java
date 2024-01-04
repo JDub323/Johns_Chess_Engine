@@ -10,7 +10,6 @@ import position.Type;
 import java.util.ArrayList;
 
 public class Evaluator implements Runnable{//always analyzes the current position
-    //TODO: when adding transposition tables, if a position found matches the previous position (including left hash), return a score of 0
     //transposition tables would break draws by repetition otherwise
     public int bestMove;
     public int bestEval;

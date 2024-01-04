@@ -43,7 +43,7 @@ public class Position {
     public Stack<Integer> PreviousHalfMoveTimers = new Stack<>();
     public Stack<Long> PreviousCastlingRights = new Stack<>();
     public Stack<int[]> PreviousMovelists = new Stack<int[]>();
-    public Stack<Integer> PreviousIndexOfFirstEmptyMove = new Stack<>();//TODO: fix this on unmake move, doesn't work rn
+    public Stack<Integer> PreviousIndexOfFirstEmptyMove = new Stack<>();
 
     public long whiteAttacksArray[] = new long[7];
     public long whiteAttacks;
@@ -177,7 +177,7 @@ public class Position {
         quietlyMakeMove(move);
         calculatePreCalculatedData();
     }
-    private void quietlyMakeMove(int move) {//TODO: make only one switch case, not two
+    private void quietlyMakeMove(int move) {
         PreviousCastlingRights.push(castlingRights);
         PreviousEnPassantTargetFiles.push(enPassantTargetFiles);
         PreviousHalfMoveTimers.push(hundredHalfmoveTimer);
@@ -1380,7 +1380,7 @@ public class Position {
         return false;
     }
 
-    public void generatePawnMoves(byte fromSquare) {//TODO: refactor this to make more optimal
+    public void generatePawnMoves(byte fromSquare) {
         long[] possibleMoves = new long[8];
         if (whiteToMove) {
             long fromSquareBB= Util.toBitboard(fromSquare);
@@ -1465,7 +1465,7 @@ public class Position {
         addMovesToMoveList(Type.pawnPromotesToB,fromSquare,possibleMoves[Type.pawnPromotesToB]);
         addMovesToMoveList(Type.pawnPromotesToR,fromSquare,possibleMoves[Type.pawnPromotesToR]);
     }
-    private void generatePawnCapturesOnly(byte fromSquare) {//TODO: refactor this to make more optimal
+    private void generatePawnCapturesOnly(byte fromSquare) {
         long possibleMoves[] = new long[8];
         if (whiteToMove) {
             long fromSquareBB= Util.toBitboard(fromSquare);
@@ -1692,7 +1692,7 @@ public class Position {
         newPosition.calculateInCheck();
         return newPosition.inCheck;
     }
-    private void quietlyEnPassant(byte fromSquare, byte toSquare) {//TODO: refactor and delete this
+    private void quietlyEnPassant(byte fromSquare, byte toSquare) {
         long fromSquareBB = Util.toBitboard(fromSquare);
         long toSquareBB = Util.toBitboard(toSquare);
         byte movingPiece = squareCentricPos[fromSquare];

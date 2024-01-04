@@ -33,7 +33,7 @@ public class TranspositionTable {
             return;
         }
 
-        if ((depth > temp.depth()) || (nodeType == TYPE_1 && temp.nodeType() != TYPE_1)) {//TODO: refactor this
+        if ((depth > temp.depth()) || (nodeType == TYPE_1 && temp.nodeType() != TYPE_1)) {
             boolean printEntry = PRINT_TT_ENTRIES && temp.nodeType() == TYPE_1;
 
             if (printEntry)System.out.println(PrintColor.YELLOW+"Entry Num: "+transpositionTableEntryString(hash));
