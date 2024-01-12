@@ -115,7 +115,6 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             return 0;
         }
 
-
         boolean nodeIsLikelyType1 = beta - alpha > 1;
         if (!nodeIsLikelyType1 && TranspositionTable.positionIsInTable(pos.zobristKey)){//check for this position on the transposition table to use that eval instead
             TranspositionTable.TableEntry temp = TranspositionTable.getTableEntry(pos.zobristKey);
