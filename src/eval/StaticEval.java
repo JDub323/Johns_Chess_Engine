@@ -64,7 +64,7 @@ public class StaticEval {
     }
 
     public static int evaluate(Position pos) {//don't check for checkmate in static eval, just hope previous positions found it
-        if (pos.gameState == Type.midGame)return midGameEvaluationOf(pos);
+        if (pos.gameState == Type.MID_GAME)return midGameEvaluationOf(pos);
         else return endGameEvaluationOf(pos);
     }
     private static int midGameEvaluationOf(Position pos) {//return a high value if good for player to move, low value if not
@@ -91,8 +91,8 @@ public class StaticEval {
     //right now the code for evaluating the position is a bit repetitive, but I should keep it this way if I need to
     //tweak one thing in the future
     private static int midGamePawnWeight(Position pos) {
-        int whitePawn = Type.White | Type.Pawn;
-        int blackPawn = Type.Black | Type.Pawn;
+        int whitePawn = Type.WHITE | Type.PAWN;
+        int blackPawn = Type.BLACK | Type.PAWN;
 
         int ret = pos.numPieces[whitePawn] - pos.numPieces[blackPawn];
         ret *= midGamePawnValue;
@@ -102,12 +102,12 @@ public class StaticEval {
         for (int i=0;i<pos.numPieces[whitePawn];i++) {
             int square = pos.pieceSquareList[whitePawn][i];
             wpLocationFactor += PieceWeights.midGameWhitePawnTable[square];
-            wpLocationFactor += getPawnBonuses(pos, square, Type.White);
+            wpLocationFactor += getPawnBonuses(pos, square, Type.WHITE);
         }
         for (int i=0;i<pos.numPieces[blackPawn];i++) {
             int square = pos.pieceSquareList[blackPawn][i];
             bpLocationFactor += PieceWeights.midGameBlackPawnTable[square];
-            bpLocationFactor += getPawnBonuses(pos, square, Type.Black);
+            bpLocationFactor += getPawnBonuses(pos, square, Type.BLACK);
         }
         ret += wpLocationFactor - bpLocationFactor;
         return ret;
@@ -120,23 +120,23 @@ public class StaticEval {
         byte enemyColor = (byte) (color^8);
 
 
-        if (((fileMask | adjFileMask) & pos.PieceArray[enemyColor | Type.Pawn]) != 0) {//the pawn is a passed pawn
+        if (((fileMask | adjFileMask) & pos.pieceArray[enemyColor | Type.PAWN]) != 0) {//the pawn is a passed pawn
             ret += PASSED_PAWN_BONUS;
         }
-        if ((adjFileMask & pos.PieceArray[color | Type.Pawn]) == 0) {//the pawn is an isolated pawn
+        if ((adjFileMask & pos.pieceArray[color | Type.PAWN]) == 0) {//the pawn is an isolated pawn
             ret += ISOLATED_PAWN_BONUS;
         }
-        if (Long.bitCount(fileMask & pos.PieceArray[color | Type.Pawn]) > 1) {//there is more than one pawn in the same file: doubled pawns
+        if (Long.bitCount(fileMask & pos.pieceArray[color | Type.PAWN]) > 1) {//there is more than one pawn in the same file: doubled pawns
             ret += DOUBLED_PAWN_BONUS;
         }
         long squareBB = Util.toBitboard(square);
-        if (color == Type.White) {
-            if ((pos.whiteAttacksArray[Type.Pawn] & squareBB) != 0) {
+        if (color == Type.WHITE) {
+            if ((pos.whiteAttacksArray[Type.PAWN] & squareBB) != 0) {
                 ret += DEFENDED_PAWN_BONUS;
             }
         }
         else {
-            if ((pos.blackAttacksArray[Type.Pawn] & squareBB) != 0) {
+            if ((pos.blackAttacksArray[Type.PAWN] & squareBB) != 0) {
                 ret += DEFENDED_PAWN_BONUS;
             }
         }
@@ -145,8 +145,8 @@ public class StaticEval {
     }
 
     private static int midGameKnightWeight(Position pos) {
-        int whiteKnight = Type.White | Type.Knight;
-        int blackKnight = Type.Black | Type.Knight;
+        int whiteKnight = Type.WHITE | Type.KNIGHT;
+        int blackKnight = Type.BLACK | Type.KNIGHT;
 
         int ret = pos.numPieces[whiteKnight] - pos.numPieces[blackKnight];
         ret *= midGameKnightValue;
@@ -156,7 +156,7 @@ public class StaticEval {
         for (int i=0;i<pos.numPieces[whiteKnight];i++) {
             int square = pos.pieceSquareList[whiteKnight][i];
             wpLocationFactor += PieceWeights.whiteKnightTable[square];
-            if ((pos.whiteAttacksArray[Type.Pawn] & Util.toBitboard(square)
+            if ((pos.whiteAttacksArray[Type.PAWN] & Util.toBitboard(square)
                     & Constants.ENEMY_SQUARES[0]) != 0) {
                 wpLocationFactor += OUTPOST_BONUS;
             }
@@ -175,8 +175,8 @@ public class StaticEval {
         return ret;
     }
     private static int midGameBishopWeight(Position pos) {
-        int whiteBishop = Type.White | Type.Bishop;
-        int blackBishop = Type.Black | Type.Bishop;
+        int whiteBishop = Type.WHITE | Type.BISHOP;
+        int blackBishop = Type.BLACK | Type.BISHOP;
 
         int ret = pos.numPieces[whiteBishop] - pos.numPieces[blackBishop];
         ret *= midGameBishopValue;
@@ -195,7 +195,7 @@ public class StaticEval {
             int square = pos.pieceSquareList[whiteBishop][i];
             bpLocationFactor += PieceWeights.blackBishopTable[square];
             bpLocationFactor += Long.bitCount(PieceAttack.lookUpBishopAttacks(square, pos.allPieces))*BISHOP_MOBILITY_MULTIPLIER;
-            if ((pos.whiteAttacksArray[Type.Pawn] & Util.toBitboard(square)
+            if ((pos.whiteAttacksArray[Type.PAWN] & Util.toBitboard(square)
                     & Constants.ENEMY_SQUARES[1]) != 0) {
                 bpLocationFactor += OUTPOST_BONUS;
             }
@@ -207,8 +207,8 @@ public class StaticEval {
         return ret;
     }
     private static int midGameRookWeight(Position pos) {
-        int whiteRook = Type.White | Type.Rook;
-        int blackRook = Type.Black | Type.Rook;
+        int whiteRook = Type.WHITE | Type.ROOK;
+        int blackRook = Type.BLACK | Type.ROOK;
 
         int ret = pos.numPieces[whiteRook] - pos.numPieces[blackRook];
         ret *= midGameRookValue;
@@ -219,7 +219,7 @@ public class StaticEval {
             int square = pos.pieceSquareList[whiteRook][i];
             wpLocationFactor += PieceWeights.whiteRookTable[square];
             wpLocationFactor += Long.bitCount(PieceAttack.lookUpRookAttacks(square, pos.allPieces))*ROOK_MOBILITY_MULTIPLIER;
-            if ((Util.toBitboard(square) & pos.whiteAttacksArray[Type.Rook]) != 0) {//rooks are connected
+            if ((Util.toBitboard(square) & pos.whiteAttacksArray[Type.ROOK]) != 0) {//rooks are connected
                 wpLocationFactor += CONNECTED_ROOK_BONUS;
             }
         }
@@ -227,7 +227,7 @@ public class StaticEval {
             int square = pos.pieceSquareList[blackRook][i];
             bpLocationFactor += PieceWeights.blackRookTable[square];
             bpLocationFactor += Long.bitCount(PieceAttack.lookUpRookAttacks(square, pos.allPieces))*ROOK_MOBILITY_MULTIPLIER;
-            if ((Util.toBitboard(square) & pos.blackAttacksArray[Type.Rook]) != 0) {//rooks are connected
+            if ((Util.toBitboard(square) & pos.blackAttacksArray[Type.ROOK]) != 0) {//rooks are connected
                 bpLocationFactor += CONNECTED_ROOK_BONUS;
             }
         }
@@ -235,8 +235,8 @@ public class StaticEval {
         return ret;
     }
     private static int midGameQueenWeight(Position pos) {
-        int whiteQueen = Type.White | Type.Queen;
-        int blackQueen = Type.Black | Type.Queen;
+        int whiteQueen = Type.WHITE | Type.QUEEN;
+        int blackQueen = Type.BLACK | Type.QUEEN;
 
         int ret = pos.numPieces[whiteQueen] - pos.numPieces[blackQueen];
         ret *= midGameQueenValue;
@@ -258,13 +258,13 @@ public class StaticEval {
     }
     private static int midGameKingSafety(Position pos) {
         //evaluate white king safety
-        int whiteKingPos = pos.pieceSquareList[Type.White | Type.King][0];
+        int whiteKingPos = pos.pieceSquareList[Type.WHITE | Type.KING][0];
         int whiteKingSafety= PieceWeights.midGameWhiteKingTable[whiteKingPos];
 
         whiteKingSafety += Long.bitCount(PieceAttack.lookUpQueenAttacks(whiteKingPos,pos.allPieces))*KING_MOBILITY_MULTIPLIER;
 
         //evaluate black king safety
-        int blackKingPos = pos.pieceSquareList[Type.Black | Type.King][0];
+        int blackKingPos = pos.pieceSquareList[Type.BLACK | Type.KING][0];
         int blackKingSafety= PieceWeights.midGameBlackKingTable[blackKingPos];
 
         blackKingSafety += Long.bitCount(PieceAttack.lookUpQueenAttacks(blackKingPos,pos.allPieces))*KING_MOBILITY_MULTIPLIER;
@@ -274,8 +274,8 @@ public class StaticEval {
     }
 
     private static int endGamePawnWeight(Position pos) {
-        int whitePawn = Type.White | Type.Pawn;
-        int blackPawn = Type.Black | Type.Pawn;
+        int whitePawn = Type.WHITE | Type.PAWN;
+        int blackPawn = Type.BLACK | Type.PAWN;
 
         int ret = pos.numPieces[whitePawn] - pos.numPieces[blackPawn];
         ret *= endGamePawnValue;
@@ -294,8 +294,8 @@ public class StaticEval {
         return ret;
     }
     private static int endGameKnightWeight(Position pos) {
-        int whiteKnight = Type.White | Type.Knight;
-        int blackKnight = Type.Black | Type.Knight;
+        int whiteKnight = Type.WHITE | Type.KNIGHT;
+        int blackKnight = Type.BLACK | Type.KNIGHT;
 
         int ret = pos.numPieces[whiteKnight] - pos.numPieces[blackKnight];
         ret *= endGameKnightValue;
@@ -314,8 +314,8 @@ public class StaticEval {
         return ret;
     }
     private static int endGameBishopWeight(Position pos) {
-        int whiteBishop = Type.White | Type.Bishop;
-        int blackBishop = Type.Black | Type.Bishop;
+        int whiteBishop = Type.WHITE | Type.BISHOP;
+        int blackBishop = Type.BLACK | Type.BISHOP;
 
         int ret = pos.numPieces[whiteBishop] - pos.numPieces[blackBishop];
         ret *= endGameBishopValue;
@@ -334,8 +334,8 @@ public class StaticEval {
         return ret;
     }
     private static int endGameRookWeight(Position pos) {
-        int whiteRook = Type.White | Type.Rook;
-        int blackRook = Type.Black | Type.Rook;
+        int whiteRook = Type.WHITE | Type.ROOK;
+        int blackRook = Type.BLACK | Type.ROOK;
 
         int ret = pos.numPieces[whiteRook] - pos.numPieces[blackRook];
         ret *= endGameRookValue;
@@ -354,8 +354,8 @@ public class StaticEval {
         return ret;
     }
     private static int endGameQueenWeight(Position pos) {
-        int whiteQueen = Type.White | Type.Queen;
-        int blackQueen = Type.Black | Type.Queen;
+        int whiteQueen = Type.WHITE | Type.QUEEN;
+        int blackQueen = Type.BLACK | Type.QUEEN;
 
         int ret = pos.numPieces[whiteQueen] - pos.numPieces[blackQueen];
         ret *= endGameQueenValue;
@@ -377,18 +377,18 @@ public class StaticEval {
         int eval = 0;
 
         //evaluate white king safety
-        eval += PieceWeights.endGameWhiteKingTable[pos.pieceSquareList[Type.White | Type.King][0]];
+        eval += PieceWeights.endGameWhiteKingTable[pos.pieceSquareList[Type.WHITE | Type.KING][0]];
 
         //evaluate black king safety
-        eval -= PieceWeights.endGameBlackKingTable[pos.pieceSquareList[Type.Black | Type.King][0]];
+        eval -= PieceWeights.endGameBlackKingTable[pos.pieceSquareList[Type.BLACK | Type.KING][0]];
 
         //favor positions where the enemy king is farther from the center
-        eval += MANHATTAN_DISTANCE_MULTIPLIER*(pos.whiteToMove ? Util.manhattanDistanceFromCenter(pos.pieceSquareList[Type.Black | Type.King][0]) :
-                Util.manhattanDistanceFromCenter(pos.pieceSquareList[Type.White | Type.King][0]));
+        eval += MANHATTAN_DISTANCE_MULTIPLIER*(pos.whiteToMove ? Util.manhattanDistanceFromCenter(pos.pieceSquareList[Type.BLACK | Type.KING][0]) :
+                Util.manhattanDistanceFromCenter(pos.pieceSquareList[Type.WHITE | Type.KING][0]));
 
         //make the king move toward the opponent king
-        eval += 100-Util.kingDistanceBetween(pos.pieceSquareList[Type.White | Type.King][0],
-                pos.pieceSquareList[Type.White | Type.King][0]) * MANHATTAN_DISTANCE_MULTIPLIER;
+        eval += 100-Util.kingDistanceBetween(pos.pieceSquareList[Type.WHITE | Type.KING][0],
+                pos.pieceSquareList[Type.WHITE | Type.KING][0]) * MANHATTAN_DISTANCE_MULTIPLIER;
 
         return eval;
     }

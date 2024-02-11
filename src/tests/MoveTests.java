@@ -4,9 +4,7 @@ import chessUtilities.Util;
 import move.GenerateMagicBitBoards;
 import move.PieceAttack;
 import position.Position;
-import position.CurrentPosition;
 import move.Move;
-import position.Zobrist;
 
 import java.io.File;
 import java.io.FileNotFoundException;

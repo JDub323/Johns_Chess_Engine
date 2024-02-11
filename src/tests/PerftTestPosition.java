@@ -43,15 +43,13 @@ public class PerftTestPosition {
         if (depth==0)return 1;
 
         int numPositions=0;
-        boolean found = false;
 
         for (int i=0;i<pos.indexOfFirstEmptyMove;i++) {
             int moveToMake = pos.legalMoves[i];
 
-            assert pos.squareCentricPos[Move.getFromSquareFromMove(moveToMake)] != Type.Empty:
+            assert pos.squareCentricPos[Move.getFromSquareFromMove(moveToMake)] != Type.EMPTY :
                     "Position: "+pos.getFen()+" Move: "+Move.getFullStringFromMove(moveToMake)+" "+pos.allPositionRepresentationsAgree();
 
-            String moveFen = Move.getFullStringFromMove(moveToMake);
             pos.makeMove(moveToMake);
             pos.calculateLegalMoves();
             numPositions += testNumPositions(pos,depth-1);

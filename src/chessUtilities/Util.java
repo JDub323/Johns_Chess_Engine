@@ -1,6 +1,5 @@
 package chessUtilities;
 
-import move.Move;
 import position.Type;
 
 public class Util {
@@ -8,75 +7,75 @@ public class Util {
 
     public static byte getPieceFromSquareWithBB (int square, long[] pa) {
         long squareBB=toBitboard(square);
-        if ((squareBB|pa[1])==pa[1])return Type.White| Type.Pawn;
-        else if ((squareBB|pa[2])==pa[2])return Type.White| Type.Knight;
-        else if ((squareBB|pa[3])==pa[3])return Type.White| Type.Bishop;
-        else if ((squareBB|pa[4])==pa[4])return Type.White| Type.Rook;
-        else if ((squareBB|pa[5])==pa[5])return Type.White| Type.Queen;
-        else if ((squareBB|pa[6])==pa[6])return Type.White| Type.King;
-        else if ((squareBB|pa[9])==pa[9])return Type.Black| Type.Pawn;
-        else if ((squareBB|pa[10])==pa[10])return Type.Black| Type.Knight;
-        else if ((squareBB|pa[11])==pa[11])return Type.Black| Type.Bishop;
-        else if ((squareBB|pa[12])==pa[12])return Type.Black| Type.Rook;
-        else if ((squareBB|pa[13])==pa[13])return Type.Black| Type.Queen;
-        else if ((squareBB|pa[14])==pa[14])return Type.Black| Type.King;
-        else return Type.Empty;
+        if ((squareBB|pa[1])==pa[1])return Type.WHITE | Type.PAWN;
+        else if ((squareBB|pa[2])==pa[2])return Type.WHITE | Type.KNIGHT;
+        else if ((squareBB|pa[3])==pa[3])return Type.WHITE | Type.BISHOP;
+        else if ((squareBB|pa[4])==pa[4])return Type.WHITE | Type.ROOK;
+        else if ((squareBB|pa[5])==pa[5])return Type.WHITE | Type.QUEEN;
+        else if ((squareBB|pa[6])==pa[6])return Type.WHITE | Type.KING;
+        else if ((squareBB|pa[9])==pa[9])return Type.BLACK | Type.PAWN;
+        else if ((squareBB|pa[10])==pa[10])return Type.BLACK | Type.KNIGHT;
+        else if ((squareBB|pa[11])==pa[11])return Type.BLACK | Type.BISHOP;
+        else if ((squareBB|pa[12])==pa[12])return Type.BLACK | Type.ROOK;
+        else if ((squareBB|pa[13])==pa[13])return Type.BLACK | Type.QUEEN;
+        else if ((squareBB|pa[14])==pa[14])return Type.BLACK | Type.KING;
+        else return Type.EMPTY;
     }
 
     public static byte getPieceFromString(String str) {
         return switch (str) {
-            case "P" -> Type.White | Type.Pawn;
-            case "p" -> Type.Black | Type.Pawn;
-            case "N" -> Type.White | Type.Knight;
-            case "n" -> Type.Black | Type.Knight;
-            case "B" -> Type.White | Type.Bishop;
-            case "b" -> Type.Black | Type.Bishop;
-            case "R" -> Type.White | Type.Rook;
-            case "r" -> Type.Black | Type.Rook;
-            case "Q" -> Type.White | Type.Queen;
-            case "q" -> Type.Black | Type.Queen;
-            case "K" -> Type.White | Type.King;
-            case "k" -> Type.Black | Type.King;
+            case "P" -> Type.WHITE | Type.PAWN;
+            case "p" -> Type.BLACK | Type.PAWN;
+            case "N" -> Type.WHITE | Type.KNIGHT;
+            case "n" -> Type.BLACK | Type.KNIGHT;
+            case "B" -> Type.WHITE | Type.BISHOP;
+            case "b" -> Type.BLACK | Type.BISHOP;
+            case "R" -> Type.WHITE | Type.ROOK;
+            case "r" -> Type.BLACK | Type.ROOK;
+            case "Q" -> Type.WHITE | Type.QUEEN;
+            case "q" -> Type.BLACK | Type.QUEEN;
+            case "K" -> Type.WHITE | Type.KING;
+            case "k" -> Type.BLACK | Type.KING;
             default -> -1;
         };
     }
 
     public static String getPieceStringFromShort(short piece) {//assume not empty
         switch (piece) {
-            case Type.White | Type.Pawn -> {
+            case Type.WHITE | Type.PAWN -> {
                 return "P";
             }
-            case Type.White | Type.Knight -> {
+            case Type.WHITE | Type.KNIGHT -> {
                 return "N";
             }
-            case Type.White | Type.Bishop -> {
+            case Type.WHITE | Type.BISHOP -> {
                 return "B";
             }
-            case Type.White | Type.Rook -> {
+            case Type.WHITE | Type.ROOK -> {
                 return "R";
             }
-            case Type.White | Type.Queen -> {
+            case Type.WHITE | Type.QUEEN -> {
                 return "Q";
             }
-            case Type.White | Type.King -> {
+            case Type.WHITE | Type.KING -> {
                 return "K";
             }
-            case Type.Black | Type.Pawn -> {
+            case Type.BLACK | Type.PAWN -> {
                 return "p";
             }
-            case Type.Black | Type.Knight -> {
+            case Type.BLACK | Type.KNIGHT -> {
                 return "n";
             }
-            case Type.Black | Type.Bishop -> {
+            case Type.BLACK | Type.BISHOP -> {
                 return "b";
             }
-            case Type.Black | Type.Rook -> {
+            case Type.BLACK | Type.ROOK -> {
                 return "r";
             }
-            case Type.Black | Type.Queen -> {
+            case Type.BLACK | Type.QUEEN -> {
                 return "q";
             }
-            case Type.Black | Type.King -> {
+            case Type.BLACK | Type.KING -> {
                 return "k";
             }
         }

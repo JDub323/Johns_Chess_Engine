@@ -262,8 +262,8 @@ public class Zobrist {
         }
 
         for (int square = 0; square<64; square++) {
-            for (int color = Type.White; color <= Type.Black; color += Type.Black) {
-                for (int piece = Type.Pawn; piece<= Type.King; piece++) {
+            for (int color = Type.WHITE; color <= Type.BLACK; color += Type.BLACK) {
+                for (int piece = Type.PAWN; piece<= Type.KING; piece++) {
                     pieceOnSquareRandom[color | piece][square] = random.nextLong();
                 }
             }
@@ -275,16 +275,16 @@ public class Zobrist {
 
         ret ^= whiteToMove ? Zobrist.whiteToMoveRandom : 0;
 
-        if ((castlingRights & Type.whiteCanCS) !=0){
+        if ((castlingRights & Type.WHITE_CAN_CS) !=0){
             ret ^= castlingRightsRandom[0];
         }
-        if ((castlingRights & Type.whiteCanCL) !=0){
+        if ((castlingRights & Type.WHITE_CAN_CL) !=0){
             ret ^= castlingRightsRandom[1];
         }
-        if ((castlingRights & Type.blackCanCS) !=0){
+        if ((castlingRights & Type.BLACK_CAN_CS) !=0){
             ret ^= castlingRightsRandom[2];
         }
-        if ((castlingRights & Type.blackCanCL) !=0){
+        if ((castlingRights & Type.BLACK_CAN_CL) !=0){
             ret ^= castlingRightsRandom[3];
         }
 
@@ -309,10 +309,10 @@ public class Zobrist {
 
     public static long getKeyFromCastlingRights(long castlingRights) {//takes an input of a one bit for the toSquare of castling
         long ret = 0;
-        if ((castlingRights & Type.whiteCanCS) !=0)ret ^= castlingRightsRandom[0];
-        if ((castlingRights & Type.whiteCanCL) !=0)ret ^= castlingRightsRandom[1];
-        if ((castlingRights & Type.blackCanCS) !=0)ret ^= castlingRightsRandom[2];
-        if ((castlingRights & Type.blackCanCL) !=0)ret ^= castlingRightsRandom[3];
+        if ((castlingRights & Type.WHITE_CAN_CS) !=0)ret ^= castlingRightsRandom[0];
+        if ((castlingRights & Type.WHITE_CAN_CL) !=0)ret ^= castlingRightsRandom[1];
+        if ((castlingRights & Type.BLACK_CAN_CS) !=0)ret ^= castlingRightsRandom[2];
+        if ((castlingRights & Type.BLACK_CAN_CL) !=0)ret ^= castlingRightsRandom[3];
         return ret;
     }
 
@@ -336,7 +336,7 @@ public class Zobrist {
 
         System.out.println("\nPiece on Square Keys");
         for (int color=0; color <=8; color +=8) {
-            for (byte piece = Type.Pawn; piece <= Type.King; piece++) {
+            for (byte piece = Type.PAWN; piece <= Type.KING; piece++) {
                 String pColor = color==0 ? "White " : "Black ";
                 System.out.println(pColor + Util.getPieceStringFromShort(piece)+" Keys: ");
                 for (int square = 0; square < 64; square++) {

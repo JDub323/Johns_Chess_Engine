@@ -51,56 +51,56 @@ public class PieceAttack {
         long squareBB = 1L<<square;
 
         switch (direction) {
-            case Type.pinRight-> {
+            case Type.DIR_RIGHT -> {
                 long edge = Constants.H_FILE;
                 while ((squareBB & edge) ==0) {
                     squareBB<<=1;
                     ret+=squareBB;
                 }
             }
-            case Type.pinUpRight-> {
+            case Type.DIR_UPRIGHT -> {
                 long edge = Constants.BISHOP_TR_EDGE;
                 while ((squareBB & edge) ==0) {
                     squareBB<<=9;
                     ret+=squareBB;
                 }
             }
-            case Type.pinUp-> {
+            case Type.DIR_UP -> {
                 long edge = Constants.RANK_8;
                 while ((squareBB & edge) ==0) {
                     squareBB<<=8;
                     ret+=squareBB;
                 }
             }
-            case Type.pinUpLeft-> {
+            case Type.DIR_UPLEFT -> {
                 long edge = Constants.BISHOP_TL_EDGE;
                 while ((squareBB & edge) ==0) {
                     squareBB<<=7;
                     ret+=squareBB;
                 }
             }
-            case Type.pinLeft-> {
+            case Type.DIR_LEFT -> {
                 long edge = Constants.A_FILE;
                 while ((squareBB & edge) ==0) {
                     squareBB>>>=1;
                     ret+=squareBB;
                 }
             }
-            case Type.pinDownLeft-> {
+            case Type.DIR_DOWNLEFT -> {
                 long edge = Constants.BISHOP_BL_EDGE;
                 while ((squareBB & edge) ==0) {
                     squareBB>>>=9;
                     ret+=squareBB;
                 }
             }
-            case Type.pinDown-> {
+            case Type.DIR_DOWN -> {
                 long edge = Constants.RANK_1;
                 while ((squareBB & edge) ==0) {
                     squareBB>>>=8;
                     ret+=squareBB;
                 }
             }
-            case Type.pinDownRight-> {
+            case Type.DIR_DOWNRIGHT -> {
                 long edge = Constants.BISHOP_BR_EDGE;
                 while ((squareBB & edge) ==0) {
                     squareBB>>>=7;

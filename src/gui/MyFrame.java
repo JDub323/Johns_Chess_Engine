@@ -14,7 +14,7 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
     Graphical panel;
     JLabel label;
     public static int mousex=0, mousey=0;
-    static byte promotionMoveType = position.Type.pawnPromotesToQ;
+    static byte promotionMoveType = position.Type.PAWN_PROMOTES_TO_Q;
     boolean mouseIsDown=false;
 
 
@@ -76,7 +76,7 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
         }
         else if (e.getKeyChar() == 'P') {
             for (int x=0;x<64;x++) {
-                CurrentPosition.position.squareCentricPos[x]= Util.getPieceFromSquareWithBB(x,CurrentPosition.position.PieceArray);
+                CurrentPosition.position.squareCentricPos[x]= Util.getPieceFromSquareWithBB(x,CurrentPosition.position.pieceArray);
             }
             System.arraycopy(CurrentPosition.position.squareCentricPos, 0, Graphical.graphicSquareCentricPos, 0, 64);
             repaint();
@@ -101,10 +101,10 @@ public class MyFrame extends JFrame implements MouseListener, MouseMotionListene
         else if (e.getKeyChar() == 'z'){
             System.out.println("Current Zobrist Key: "+Long.toHexString(CurrentPosition.position.zobristKey));
         }
-        else if (e.getKeyChar() == 'q') promotionMoveType = position.Type.pawnPromotesToQ;
-        else if (e.getKeyChar() == 'n') promotionMoveType = position.Type.pawnPromotesToN;
-        else if (e.getKeyChar() == 'b') promotionMoveType = position.Type.pawnPromotesToB;
-        else if (e.getKeyChar() == 'r') promotionMoveType = position.Type.pawnPromotesToR;
+        else if (e.getKeyChar() == 'q') promotionMoveType = position.Type.PAWN_PROMOTES_TO_Q;
+        else if (e.getKeyChar() == 'n') promotionMoveType = position.Type.PAWN_PROMOTES_TO_N;
+        else if (e.getKeyChar() == 'b') promotionMoveType = position.Type.PAWN_PROMOTES_TO_B;
+        else if (e.getKeyChar() == 'r') promotionMoveType = position.Type.PAWN_PROMOTES_TO_R;
     }
     @Override
     public void mouseClicked(MouseEvent e) {

@@ -28,7 +28,7 @@ public class MoveMaker implements Runnable{
     }
 
     private void makeBestMove(int move) {
-        if (move != Type.illegalMove) {
+        if (move != Type.ILLEGAL_MOVE) {
             CurrentPosition.makeMove(move);
             pos.calculateLegalMoves();
         }
@@ -52,7 +52,7 @@ public class MoveMaker implements Runnable{
             makeBestMove(evaluator.bestMove);
             FrameHolder.chessGraphics.updateGraphics();
             Graphical.stopAllMoves=false;
-            if (evaluator.bestMove != Type.illegalMove)CurrentPosition.updateMoveMakers();//don't try to make a move when the game is over
+            if (evaluator.bestMove != Type.ILLEGAL_MOVE)CurrentPosition.updateMoveMakers();//don't try to make a move when the game is over
         }
     }
 }

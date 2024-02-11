@@ -38,10 +38,10 @@ public class Evaluator implements Runnable{//always analyzes the current positio
         }
 
         if (!pos.moveIsOnMoveList(bestMove)) {//asserts I don't make an illegal move
-            bestMove = Type.illegalMove;
+            bestMove = Type.ILLEGAL_MOVE;
         }
 
-        if (bestMove == Type.illegalMove && pos.gameState <= Type.endGame) {//no move was found in the database, the game still continues
+        if (bestMove == Type.ILLEGAL_MOVE && pos.gameState <= Type.END_GAME) {//no move was found in the database, the game still continues
             shiftPrincipalVariation();//use the pv from the previous search
             for (int i=1;i<=MAX_DEPTH; i++) {
                 findBestMove(pos, i);
@@ -53,7 +53,7 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             //printPrincipalVariation();
             //printEvaluation(pos.whiteToMove);
         }
-        else if (pos.gameState > Type.endGame) {
+        else if (pos.gameState > Type.END_GAME) {
             System.out.println("game has ended");
         }
     }
@@ -139,16 +139,16 @@ public class Evaluator implements Runnable{//always analyzes the current positio
 
         pos.calculateLegalMoves();
 
-        if (pos.gameState > Type.endGame) {//game has ended
+        if (pos.gameState > Type.END_GAME) {//game has ended
             int eval;
-            if (pos.gameState == Type.gameIsADraw) {
+            if (pos.gameState == Type.GAME_IS_A_DRAW) {
                 eval = StaticEval.DRAW;
             }
             else {//always the worst possible position for the player to move in checkmate, so always the worst value
                 eval = -StaticEval.CHECKMATE+SEARCH_MAX_DEPTH-depthLeft;
             }//add the distance from the root node so engine prefers faster checkmates
 
-            TranspositionTable.tryAddingEntry(pos.zobristKey, eval, Type.illegalMove, (byte)depthLeft, TYPE_1);
+            TranspositionTable.tryAddingEntry(pos.zobristKey, eval, Type.ILLEGAL_MOVE, (byte)depthLeft, TYPE_1);
             return eval;
         }
 
@@ -244,13 +244,13 @@ public class Evaluator implements Runnable{//always analyzes the current positio
             else upperBound = indexToCheck-1;
         }
 
-        return Type.illegalMove;//no move was found
+        return Type.ILLEGAL_MOVE;//no move was found
     }
 
     public void printPrincipalVariation() {
         int listLength = 0;
         for (int i : principalVariation) {
-            if (i == Type.illegalMove) break;//pruning made the PV shorter than the depth
+            if (i == Type.ILLEGAL_MOVE) break;//pruning made the PV shorter than the depth
             listLength++;
         }
 
