@@ -17,6 +17,8 @@ public class StartingFrame extends JFrame implements ActionListener {
     private final JButton startButton;
     private Image chessBotLogo = null;
     private Image humanLogo = null;
+    private Image greenCheck = null;
+    private Image redX = null;
     private final ImageObserver observer;
 
     public StartingFrame() {
@@ -49,6 +51,10 @@ public class StartingFrame extends JFrame implements ActionListener {
                     ("C:\\Users\\jwhal\\Johns_Chess_Engine_FINAL\\src\\startingWindow\\Chess_AI_Logo.png"));
             humanLogo = ImageIO.read(new File
                     ("C:\\Users\\jwhal\\Johns_Chess_Engine_FINAL\\src\\startingWindow\\HumanChessLogo.png"));
+            greenCheck = ImageIO.read(new File
+                    ("C:\\Users\\jwhal\\Johns_Chess_Engine_FINAL\\src\\startingWindow\\green-check-mark-png.png"));
+            redX = ImageIO.read(new File
+                    ("C:\\Users\\jwhal\\Johns_Chess_Engine_FINAL\\src\\startingWindow\\red-X-png.png"));
         } catch (IOException ignored) {
 
         }
@@ -93,18 +99,32 @@ public class StartingFrame extends JFrame implements ActionListener {
         int CHESS_AI_LOGO_WIDTH = 150;
         int CHESS_AI_LOGO_HEIGHT = 220;
         int HUMAN_LOGO_WIDTH = 150;
-        int HUMAN_LOGO_HEIGHT = 150;
+        int HUMAN_LOGO_HEIGHT = 170;
+
+        //gives the constructor enough time to load images
+        if (redX == null) {
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
         if (Main.isPlayerWhite()) {
             g.drawImage(humanLogo,20,330, HUMAN_LOGO_WIDTH, HUMAN_LOGO_HEIGHT,observer);
+            g.drawImage(greenCheck,280,60,50,50,observer);
         }
         else {
             g.drawImage(chessBotLogo,20,330, CHESS_AI_LOGO_WIDTH, CHESS_AI_LOGO_HEIGHT, observer);
+            g.drawImage(redX,280,60,50,50,observer);
         }
         if (Main.isPlayerBlack()) {
             g.drawImage(humanLogo,330,330, HUMAN_LOGO_WIDTH, HUMAN_LOGO_HEIGHT,observer);
+            g.drawImage(greenCheck,280,120,50,50,observer);
         }
         else {
             g.drawImage(chessBotLogo,320,330, CHESS_AI_LOGO_WIDTH, CHESS_AI_LOGO_HEIGHT, observer);
+            g.drawImage(redX,280,120,50,50,observer);
         }
 
 

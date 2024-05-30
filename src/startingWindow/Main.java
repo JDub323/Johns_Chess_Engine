@@ -4,7 +4,7 @@ import engine.MainEngine;
 
 public class Main {
 
-    private static boolean playerPlaysWhite = true, playerPlaysBlack = true;
+    private static boolean playerPlaysWhite = true, playerPlaysBlack = false;
     private static int engineWaitTimeIndex = 0;
     private static StartingFrame frame;
 
