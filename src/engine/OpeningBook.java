@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import static chessUtilities.Util.PROJECT_PATH;
+
 public class OpeningBook {
 
     public static final int OPENING_BOOK_LENGTH = 14;
@@ -17,14 +19,14 @@ public class OpeningBook {
     public static void initializeBookLists() {
         Scanner fileScanner;
         try {
-            fileScanner = new Scanner(new File("C:\\Users\\jwhal\\Johns_Chess_Engine\\src\\engine\\White's_Move_Opening_Database"));
+            fileScanner = new Scanner(new File(PROJECT_PATH+"\\src\\engine\\White's_Move_Opening_Database"));
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
         writeToArrayList(fileScanner, whiteOpeningBook);
 
         try {
-            fileScanner = new Scanner(new File("C:\\Users\\jwhal\\Johns_Chess_Engine\\src\\engine\\Black's_Move_Opening_Database"));
+            fileScanner = new Scanner(new File(PROJECT_PATH+"\\src\\engine\\Black's_Move_Opening_Database"));
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -68,8 +70,8 @@ public class OpeningBook {
 
 
     public static void makeBlackAndWhiteOpeningBooks() throws FileNotFoundException {
-        File whiteWinGames = new File("C:\\Users\\jwhal\\Johns_Chess_Engine\\src\\engine\\clean-lichess_white_wins_2500.pgn");
-        File blackWinGames = new File("C:\\Users\\jwhal\\Johns_Chess_Engine\\src\\engine\\clean-lichess_black_wins_2500.pgn");
+        File whiteWinGames = new File(PROJECT_PATH+"\\src\\engine\\clean-lichess_white_wins_2500.pgn");
+        File blackWinGames = new File(PROJECT_PATH+"\\src\\engine\\clean-lichess_black_wins_2500.pgn");
         makeAllBookPositions(whiteWinGames, whiteOpeningBook, whiteOpeningBookKeys, true);
         makeAllBookPositions(blackWinGames, blackOpeningBook, blackOpeningBookKeys, false);
     }

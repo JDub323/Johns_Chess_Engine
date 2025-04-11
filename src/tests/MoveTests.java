@@ -11,6 +11,8 @@ import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
+import static chessUtilities.Util.PROJECT_PATH;
+
 public class MoveTests {
 
     private static final ArrayList<PerftTestPosition> testPositions = new ArrayList<>();
@@ -39,7 +41,7 @@ public class MoveTests {
     }
 
     private static void initializeMoveTestArray() {
-        File f = new File("C:\\Users\\jwhal\\Johns_Chess_Engine\\src\\tests\\EtherealTestPositions");
+        File f = new File(PROJECT_PATH+"\\src\\tests\\EtherealTestPositions");
         Scanner a;
         try {
             a = new Scanner(f);

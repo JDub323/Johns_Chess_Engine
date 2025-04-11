@@ -9,6 +9,8 @@ import java.awt.image.ImageObserver;
 import java.io.File;
 import java.io.IOException;
 
+import static chessUtilities.Util.PROJECT_PATH;
+
 public class StartingFrame extends JFrame implements ActionListener {
 
     private final JButton playerPlaysWhiteButton;
@@ -48,13 +50,13 @@ public class StartingFrame extends JFrame implements ActionListener {
 
         try {
             chessBotLogo = ImageIO.read(new File
-                    ("C:\\Users\\jwhal\\Johns_Chess_Engine_FINAL\\src\\startingWindow\\Chess_AI_Logo.png"));
+                    (PROJECT_PATH + "/src/startingWindow/Chess_AI_Logo.png"));
             humanLogo = ImageIO.read(new File
-                    ("C:\\Users\\jwhal\\Johns_Chess_Engine_FINAL\\src\\startingWindow\\HumanChessLogo.png"));
+                    (PROJECT_PATH + "/src/startingWindow/HumanChessLogo.png"));
             greenCheck = ImageIO.read(new File
-                    ("C:\\Users\\jwhal\\Johns_Chess_Engine_FINAL\\src\\startingWindow\\green-check-mark-png.png"));
+                    (PROJECT_PATH + "/src/startingWindow/green-check-mark-png.png"));
             redX = ImageIO.read(new File
-                    ("C:\\Users\\jwhal\\Johns_Chess_Engine_FINAL\\src\\startingWindow\\red-X-png.png"));
+                    (PROJECT_PATH + "/src/startingWindow/red-X-png.png"));
         } catch (IOException ignored) {
 
         }

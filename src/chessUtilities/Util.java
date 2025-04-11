@@ -4,6 +4,7 @@ import position.Type;
 
 public class Util {
 
+    public static String PROJECT_PATH = "C:\\Users\\jwhal\\Projects\\JavaProjects\\Johns_Chess_Engine_FINAL";
 
     public static byte getPieceFromSquareWithBB (int square, long[] pa) {
         long squareBB=toBitboard(square);
